@@ -1,0 +1,257 @@
+Intent,User_message,Entity,Bot_Response
+Morning_Greeting,Bonjour,,"Bonjour ! 🌱 Une belle journée pour manger sain, non ?"
+Morning_Greeting,Bnjrr,,"Bonjour, besoin de conseils nutrition ?🍎"
+Morning_Greeting,Bon matin,,"Bonjour, prêt pour une nouvelle journée ?🌞"
+Morning_Greeting,"Bonjour, ça va ?",,Bonjour ! En quoi puis-je vous être utile ?👋
+Morning_Greeting,Rebonjour,,Toujours un plaisir de te retrouver 😊
+Morning_Greeting,"Bonjour, je me sens fatigué(e)",,"Hey, quoi de neuf ?😊"
+Morning_Greeting,Morning,,Good morning! 🍓 Yogurt bowl or eggs for energy today?
+,,,
+Afternoon_Greeting,Bon après-midi !	,,"Coucou chef ! 👨‍🍳 Je propose salade quinoa ou poke bowl, tu préfères ?"
+Afternoon_Greeting,Hello l’après-midi,,Hey ! Voici ton menu <500 cal : 1. Soupe 2. Saumon vapeur 3. Lentilles👨‍🍳
+Afternoon_Greeting,"Salut, bon aprem !	",,"Hello, envie de manger sain ?❤️"
+Afternoon_Greeting,Bonne après-midi à toi	,,"Salut, comment tu vas ?🏃‍♂️🥦"
+Afternoon_Greeting,"Coucou, comment ça va cet aprem ?",,Super initiative ! 🌿 Voici des options 100% healthy pour toi
+,,,
+greeting_informal,Ciao,,Ciao ! 🌞 Comment puis-je t'aider aujourd'hui ?
+greeting_informal,Hello,,Heyyy ! 💫 Ton énergie est contagieuse ! Quel type de repas te motive ?
+greeting_informal,yo,,Génial ! 🚀 Parlons de ton menu énergisant pour la journée !
+greeting_informal,Hola,,Je suis là pour toi ! ❤️ Par où commençons-nous : recettes ou conseils ?
+greeting_informal,"Hello, j'ai faim !",,Voici des idées pour calmer ta faim intelligemment🍎 
+greeting_informal,"Coucou, je débute en nutrition",,Bienvenue sur BiteWise! 🎉 Commençons par des bases simples et gourmandes.
+greeting_informal,Hi !,,Hi there! 🌟 Ready to cook something delicious and healthy?
+greeting_informal,Pst,,Hola! 🥑 ¿Recetas ligeras o llenas de sabor hoy?
+greeting_informal,Ciao,,Ciao bella/o! 🍝 Pasta sana o algo ligero?
+greeting_informal,pstt,,Je suis opérationnel 💡 Balance ta question !
+greeting_informal,Hallo,,Prends une grande inspiration 🧘‍♂️... et parlons d'un menu apaisant🥦💪
+greeting_informal,yoooo,,Bonsoir ! 🌙 Prêt(e) pour un dîner équilibré ?
+greeting_informal,hé,,Hey hey ! Comment tu vas ? 😊
+greeting_informal,hey bot,,Yo ! T’as besoin d’un coup de main ? 💬
+greeting_informal,Hello le bot !,,Hello ! Je suis là pour vous 👋
+greeting_informal,yoo bot,,Salut l’ami ! Toujours dispo 😎
+greeting_informal,"Hé, assistant !",,J’espère que tu te sens en forme aujourd’hui 🌈💚
+greeting_informal,Wesh bien ou bien ?,,Oh salut ! Ça fait plaisir de te revoir
+greeting_informal,Yoo machine intelligente ,,Bonjour ! Comment puis-je vous aider aujourd’hui ?
+greeting_informal,ccc,,"Toujours là pour t’aider, vas-y !🔥🔥"
+greeting_informal,Coucou,,Salut ! N'hésitez pas à poser votre question.🔥
+greeting_informal,on recommence ?,,je suis là 😎
+greeting_informal,je viens te parler,,Salut ! Ton assistant intelligent est dispo
+greeting_informal,psst psst,,je suis là 😎
+greeting_informal,slt,,"Wesh, je suis là 😎"
+greeting_informal,dispo ?,,Coucou toi ! Toujours là pour toi 🌞
+greeting_informal,du retour,,Content de te voir ici !😄
+greeting_informal,Re coucou,,Le bot est en ligne !💪
+greeting_informal,t'es disponible maintenant?,,"Biensur, je suis toujours disponible🔥🔥"
+greeting_informal,discutons un peu ?,,"Hey, j’étais justement en train de t’attendre 😄"
+,,,
+availability_check,c'est urgent,,"Je suis là, 100% focus sur ton urgence 🔎"
+availability_check,J'ai une question,,"Je suis là et prêt à t'aider ! 🚀 Par quoi veux-tu commencer : conseils nutrition, recettes, ou suivi des objectifs ?"
+availability_check,Tu peux m'aider ?,,Bien sûr 😊! Pose-moi ta question ou dis-moi ce qui te préoccute
+availability_check,Il y a quelqu'un ?,,En ligne et concentré 👀
+availability_check,"Bot, t'es actif ?",,Je ne dors jamais 😉 Dis-moi ce que tu veux faire.
+availability_check,"Hello, tu me vois ?",,Toujours en ligne ! Que puis-je faire pour toi ?🔥
+availability_check,Toujours en ligne ?,,Actif et motivé comme un smoothie vert ! 💪 Quelle est ta demande ?
+availability_check,Besoin d'un conseil vite fait,,Disponible 24/7 pour tes questions nutrition ! 🕒 C'est pour un repas maintenant ou des conseils généraux ?
+availability_check,Ça marche là ?,,"Pose ta question, je suis dispo 😄"
+availability_check,T'es disponible ?,,Yep ! Je suis prêt à répondre😊
+availability_check,Je peux te demander un truc ?,,"Toujours ! 😄Vas-y, demande-moi ce que tu veux — je suis tout ouïe 👂✨"
+availability_check,"Help, je suis en panne d'inspiration",," Pas de panique, je suis là avec toi 😌💬. On va gérer ça ensemble, une chose à la fois. Dis-moi ce qu’il se passe 🙏"
+availability_check,"Ola bot, ça roule ?",,Coucou warrior ! 🏋️‍♂️ Protéines ou detox aujourd’hui ?
+availability_check,tu m’entends ?,,Toujours en ligne ! 💡 Un problème spécifique ou une recherche générale ?
+availability_check,"Bot, tu es là ?",,Heyyy squad ! 💪 Quel défi food on relève ensemble aujourd’hui ?
+availability_check,help!,,"Prêt à t’aider ! 🚀 Tape ‘recette’, ‘conseil’ ou ton ingrédient favori."
+availability_check,Comment ça marche ?,,Je t’aide à trouver recettes/conseils. Dis-moi ton besoin en 1 mot !
+availability_check,besoin d'aide,,"Bien sûr ! Par où commencer : recettes, objectifs ou conseils ? 🛠️"
+availability_check,Aide-moi,,"OK, je suis avec toi. Qu’est-ce qu’on règle ensemble ? 💡"
+availability_check,Je suis perdu(e),,"Dis-moi ce qui te bloque, je vais faire de mon mieux pour t’aider 😉"
+availability_check,je suis en panique,,"Respire un bon coup, je suis avec toi. Explique-moi ce qu’il se passe 💙"
+availability_check,??,,"Tu peux me demander n’importe quoi, je suis prêt.💡"
+availability_check,!!,,"Tu peux me demander n’importe quoi, je suis prêt.💡"
+availability_check,....,,"Tu peux me demander n’importe quoi, je suis prêt. 💡"
+,,,
+thanks,Merci!,,"Avec plaisir ! Si t’as besoin de quoi que ce soit d’autre, je suis là 😉"
+thanks,Merci beaicoup,,Je suis content d’avoir pu t’aider !
+thanks,"trop sympa, merci",,N’hésite pas si tu as d’autres questions 😊
+thanks,Merci pour ton aide !,,Anytime ! On reste en équipe 💪
+thanks,Thanks bro,,Tu peux toujours compter sur moi ✌️
+thanks,"C’était top, merci",,Merci à toi aussi pour ta confiance !
+thanks,Merci infiniment.,,C’est moi qui te remercie !❤️
+thanks,"Merci bien, t’assures !",,Ça me fait plaisir de pouvoir aider 💙
+thanks,"Franchement, merci du fond du cœur.",,Reviens quand tu veux !❤️
+thanks,Merci pour ta rapidité !,,À ton service 🙌
+thanks,thank u,,"Avec plaisir ! Si t’as besoin de quoi que ce soit d’autre, je suis là 😉"
+thanks,❤️,,Ça me fait plaisir de pouvoir aider 💙
+,,,
+bitewise_guide,Comment fonctionne BiteWise ?,,"BiteWise t’aide à mieux manger ! 🍎 Tu peux scanner un produit, prendre une photo de ton repas ou importer une image, et l’IA l’analyse pour te donner des informations nutritionnelles détaillées. En plus, tu peux discuter avec des experts comme des nutritionnistes et suivre tes progrès à travers des graphiques dans ton profil ! 💪"
+bitewise_guide,C'est quoi BiteWise ?,,"BiteWise est une application de coaching nutritionnel intelligent 🍏📱 qui t’aide à mieux gérer ton alimentation. Elle analyse tes repas grâce à l’intelligence artificielle 🤖, que ce soit en scannant des codes-barres, en prenant des photos de tes repas 📸, ou en important des images depuis ta galerie. En fonction de ce que tu manges, elle te donne des recommandations personnalisées 🍽️ pour t’aider à atteindre tes objectifs santé 🏋️‍♂️, comme perdre du poids ou manger plus sainement 🌱. Tu peux aussi suivre tes progrès avec des graphiques et des statistiques 📊, discuter avec des experts comme des nutritionnistes 👨‍⚕️, et découvrir des recettes saines adaptées à tes besoins ! 🍳🥗"
+bitewise_guide,Comment utiliser BiteWise ?,,Pour utiliser BiteWise :
+bitewise_guide,Tu peux m'expliquer BiteWise ?,,"BiteWise est une application de coaching nutritionnel 🍏📱. Elle t’aide à analyser tes repas en scannant des codes-barres 📸, en prenant une photo de ton repas ou en important une image depuis ta galerie 🖼️. L’IA analyse les informations nutritionnelles et te donne des conseils personnalisés 🍽️. Tu peux aussi discuter avec des experts 👨‍⚕️ et suivre tes progrès grâce à des graphiques 📊. En plus, tu peux trouver des recettes saines 🍳 ou entrer les tiennes !"
+bitewise_guide,bitewise c'est pour quoi ?,,Scanner un code-barres 📱 : Scanne le code-barres d'un produit pour connaître ses informations nutritionnelles.
+bitewise_guide,A quoi sert BiteWise ?,,"BiteWise est une application de coaching nutritionnel intelligent 📱qui t’aide à mieux gérer ton alimentation et à atteindre tes objectifs santé. Elle analyse tes repas grâce à l’intelligence artificielle, que ce soit en scannant des codes-barres, en prenant des photos de tes repas ou en important des images depuis ta galerie. L’application te fournit des recommandations personnalisées, te permet de suivre tes progrès à travers des graphiques et des statistiques, et offre la possibilité de discuter avec des experts en nutrition. De plus, tu peux rechercher des recettes saines ou entrer les tiennes pour obtenir des informations nutritionnelles détaillées."
+bitewise_guide,Comment ça marche BiteWise ?,,Prendre une photo 📸 : Capture une photo de ton repas et laisse l'IA l’analyser pour obtenir des conseils nutritionnels.
+bitewise_guide,"BiteWise, comment je m'en sers ?",,BiteWise est super facile à utiliser ! 📱 Scanne un code-barres ou prends une photo de ton repas 📸. L’IA te donnera des conseils personnalisés en fonction de ton alimentation. Suis ton évolution dans ton profil 📊 et consulte des experts en nutrition 👨‍⚕️ pour des conseils
+bitewise_guide,"BiteWise, tu fais quoi exactement ?",,"BiteWise t’aide à mieux manger ! 🍏 Je scanne des produits 🍫, analyse des photos de tes repas 📸 ou importe des images pour t’offrir des infos nutritionnelles détaillées 🧠. Je te donne aussi des conseils personnalisés pour atteindre tes objectifs santé 💪, tu peux suivre tes progrès avec des graphiques 📊, et consulter des experts 👨‍⚕️ en nutrition"
+bitewise_guide,C'est quoi ce truc BiteWise ?,,"BiteWise est une app de coaching nutritionnel 🍏📱. Elle t’aide à analyser tes repas 🍽️ grâce à l’IA 🤖. Tu peux scanner des produits avec des codes-barres 📦, prendre des photos de tes repas 📸 ou importer des images depuis ta galerie 🖼️. En retour, tu reçois des conseils personnalisés 🥗, tu peux suivre tes progrès avec des graphiques 📊, et discuter avec des experts en nutrition 👨‍⚕️. Tu peux aussi découvrir des recettes saines 🍳 et les ajouter à ton profil !"
+,,,
+analyse_food,"Si je prends mon repas en photo, tu peux l’analyser ?",,"Oui ! Va dans la section Analyse 📊, clique sur ""Snap a new photo"" 📸 et attends quelques secondes ⏱️. L’IA va te générer un rapport nutritionnel complet avec calories, nutriments et conseils adaptés 🍽️💡"
+analyse_food,Je peux prendre une photo de mon assiette ?,,"Va dans la section Analyse 📊, clique sur ""Snap a new photo"" 📸 et attends quelques secondes ⏱️. L’IA va te générer un rapport nutritionnel complet avec calories, nutriments et conseils adaptés 🍽️💡"
+analyse_food,Et si j’ai déjà une photo de mon plat ?,,"Ouvre la section Analyse 📊, clique sur ""Import from gallery"" 🖼️, choisis ton image, et laisse l’IA analyser ton repas 🧠. En quelques instants, tu auras toutes les infos nutritionnelles de ton plat 🍲📈"
+analyse_food,Je peux utiliser une image de ma galerie ?,,"Oui, ouvre la section Analyse 📊, clique sur ""Import from gallery"" 🖼️, choisis ton image, et laisse l’IA analyser ton repas 🧠. En quelques instants, tu auras toutes les infos nutritionnelles de ton plat 🍲📈"
+analyse_food,Et pour les snacks ?,,"Pour les produits emballés, va dans la section d'analyse puis sélectionne ""Barcode scan"" 📦📲. Scanne le code-barres et obtiens immédiatement les infos nutritionnelles détaillées du produit 🍫🔍. Ultra pratique pour les snacks !"
+analyse_food,Tu reconnais les aliments avec code-barres ?,,"Pour les produits emballés, va dans la section d'analyse puis sélectionne ""Barcode scan"" 📦📲. Scanne le code-barres et obtiens immédiatement les infos nutritionnelles détaillées du produit 🍫🔍. Ultra pratique pour les snacks !"
+analyse_food,Que faire si l'IA a mal identifié un ingrédient ?,,"Si l’IA échoue à identifier un ingrédient ou donne des données erronées 🚫, tu peux cliquer sur ""It's incorrect"" ❌, puis modifier l’ingrédient manuellement ✏️. Après ça, relance simplement l’analyse 🔄 et obtient une nouvelle estimation !"
+,,,
+progress,Où je peux voir mon évolution ?,,"Tu peux suivre ton évolution dans la section ""profile"" 📊. Les données sont affichées sous forme de graphiques par semaine, mois ou année 📅. Tu verras comment tu avances vers tes objectifs santé 💪"
+progress,Comment suivre mes progrès ?,,"Tu peux suivre ton évolution dans l’onglet ""Progrès"" 📊. Les données sont affichées sous forme de graphiques par semaine, mois ou année 📅. Tu verras comment tu avances vers tes objectifs santé 💪"
+progress,BiteWise me montre des stats ?,,"Pour modifier ton poids actuel, ton poids cible 🎯, ou tes allergies et préférences alimentaires 🥦🚫, va dans Settings ⚙️Mets à jour ce qui te concerne, et c’est tout bon ✅ !"
+progress,Y a des graphiques de mon activité ?,,"Tu peux consulter tes progrès par semaine, mois ou année. Ça t’aide à garder une vue globale sur tes efforts et tes résultats au fil du temps ⏳📉📈"
+progress,Je peux voir mes résultats sur une semaine ?,,"Absolument ! dans votre profil tu peux visualiser tes résultats sur une semaine, un mois ou même une année 📅. Pratique pour suivre ton évolution jour après jour 💪🌟 !"
+progress,Comment mettre à jour mon poids ?,,"Tu peux modifier ton poids actuel toi-même ⚖️ en allant dans Settings ⚙️. Sinon,  BiteWise t’enverra aussi des notifications régulières 🔔 pour te rappeler de le mettre à jour et régénérer ta valeur BMC automatiquement 🧠📈"
+progress,Où je change mon objectif de poids ?,,"Tu peux changer ton poids quand tu veux depuis Settings ⚙️ Et pas de panique 😄, BiteWise t’envoie des rappels réguliers 🔔 pour ne pas oublier de le mettre à jour et recalculer ta valeur BMC d'une manière automatique💡📊"
+progress,Comment consulter mes anciens résultats ?,,"📊 Dans ton profil, tu peux visualiser ton progrès par semaine, mois et année. Tu y trouveras des graphiques 📈 et un historique détaillé de ton activité."
+progress,Y a-t-il une vue graphique de mes performances ?,,"📊 Oui, BiteWise te propose une vue graphique claire de tes performances dans la section ""Progression"" 👤. Tu peux suivre ton évolution par jour, semaine ou mois à l’aide de courbes et de statistiques visuelles 📈."
+progress,Est-ce qu’il y a un rapport de suivi ?,,"📊 Oui ! BiteWise génère automatiquement un rapport de suivi dans ton profil 👤. Tu y trouveras un résumé de tes progrès 🔍, avec des graphiques clairs par semaine, mois ou année."
+progress,Comment je compare mes performances avec la semaine dernière ?,,Tu peux comparer tes progrès sur différentes périodes depuis ton profil.
+progress,Comment consulter mes anciens résultats ?,,"🕓 Tu peux consulter tes anciens résultats dans ton profil 👤. L’app enregistre ton historique par semaine, mois et année pour que tu puisses suivre ton évolution facilement."
+progress,Est-ce que BiteWise garde une trace de mes activités ?,,"🗂️ Oui, tu peux le consulter dans ton profil. C’est trié par semaine, mois et année pour mieux suivre ton parcours."
+progress,BiteWise affiche-t-il un résumé de mes progrès ?,,"📱 Dans ton espace personnel, tu as un suivi complet de ton activité 💪, avec stats hebdomadaires 📈, mensuelles 📊 et annuelles "
+progress,Y a un endroit pour voir mes stats ?,,"📱 Dans ton espace personnel, tu as un suivi complet de ton activité 💪, avec stats hebdomadaires 📈, mensuelles 📊 et annuelles "
+progress,Où je peux suivre mes efforts ?,,"📱 Dans ton espace personnel, tu as un suivi complet de ton activité 💪, avec stats hebdomadaires 📈, mensuelles 📊 et annuelles "
+progress,BiteWise garde mon historique ?,,"💡 Oui ! BiteWise analyse ton profil, tes repas et tes progrès pour te proposer des recommandations 100% personnalisées 🎯."
+,,,
+recommendations,Est-ce que BiteWise me donne des recommandations ?,,🧠 L’app apprend de tes habitudes alimentaires et t’oriente vers des choix plus sains pour t’aider à atteindre tes objectifs 💪
+recommendations,J’ai des conseils personnalisés quelque part ?,,"📈 En suivant ton évolution et ce que tu consommes, BiteWise ajuste ses conseils pour rester aligné avec tes objectifs de santé."
+recommendations,Comment BiteWise m’aide à atteindre mes objectifs ?,,"🛠️ BiteWise ajuste ses recommandations automatiquement en fonction de ton niveau d’activité, de tes repas et de ton historique."
+recommendations,L’app me fait des suggestions selon ce que je mange ?,,🥗 Tu recevras des suggestions adaptées à ton rythme et à tes préférences alimentaires.
+recommendations,"Je veux des conseils adaptés à mes habitudes, c’est possible ?",,"🧠 Oui, totalement ! BiteWise analyse tes habitudes alimentaires 🍽️ et ton comportement pour te proposer des conseils personnalisés qui correspondent à ton mode de vie. 💪📊"
+recommendations,BiteWise s’adapte à mon profil ?,,"Oui, BiteWise s’adapte à votre profil ! 😊 L’application analyse vos habitudes alimentaires 🍎🥗, vos objectifs de santé 🏋️‍♂️💪, et vos progrès 📈 pour vous offrir des recommandations personnalisées 🎯. En fonction de vos repas 🍽️, de vos préférences et de vos besoins spécifiques, BiteWise ajuste ses conseils pour vous aider à atteindre vos objectifs de manière optimale 🚀."
+recommendations,Je peux avoir un plan selon mes repas ?,,"Oui, en fonction de ce que vous mangez, BiteWise peut vous suggérer des plans adaptés qui vous aident à progresser vers vos objectifs tout en vous apportant des recommandations nutritionnelles précises. 📅🍏"
+recommendations,Est-ce que mes progrès influencent les recommandations ?,,"Oui, chaque étape de votre parcours est prise en compte ! 🛤️ BiteWise adapte les recommandations en fonction de vos progrès pour vous soutenir efficacement dans l'atteinte de vos objectifs. 🏅"
+recommendations,BiteWise me donne quoi comme recommandations ?,,"Oui, vos progrès sont pris en compte ! 📈 BiteWise ajuste ses recommandations en fonction de vos avancées pour vous garantir que vous êtes toujours sur la bonne voie pour atteindre vos objectifs. 🎯"
+recommendations,Comment BiteWise sait quoi me conseiller ?,,"BiteWise utilise des algorithmes d'IA pour analyser vos données alimentaires et vos objectifs de santé. Grâce à ces analyses, elle génère des recommandations sur mesure qui évoluent avec vous. 🔍🍏"
+recommendations,Comment avoir des conseils santé dans BiteWise ?,,Vous recevrez des conseils santé directement dans BiteWise dès que vous créez votre profil et définissez vos objectifs. L'app adapte ensuite ses suggestions en fonction de vos repas et de vos progrès ! 🍏🎯
+recommendations,BiteWise m’aide à mieux manger ?,,"Oui ! 🎯 BiteWise est conçue pour vous aider à mieux manger en vous guidant vers des choix alimentaires plus équilibrés. En fonction de vos habitudes et de vos progrès, l’app vous offre des recommandations pour améliorer votre nutrition. 🍎"
+recommendations,Les recommandations changent selon ce que je mange ?,,"Oui, les recommandations de BiteWise changent en fonction de ce que vous mangez ! 🍽️ L'application analyse vos repas et ajuste ses conseils pour vous aider à atteindre vos objectifs de manière plus ciblée. 📊"
+recommendations,Il y a des suggestions alimentaires dans l’app ?,,Absolument ! 🎯 BiteWise offre des suggestions alimentaires personnalisées selon vos besoins nutritionnels. L’app vous recommande des repas et des ingrédients pour vous aider à atteindre vos objectifs de santé. 🍏
+,,,
+notifications,J’ai la main pour définir des alarmes dans BiteWise ?,,"Absolument ! 🎯 BiteWise vous permet de programmer vos propres rappels dans l’onglet Reminders. Que ce soit pour boire de l’eau 💧, faire une pause 🧘 ou manger un snack sain 🍌, vous choisissez l’heure et le sujet !"
+notifications,Est-ce que je peux programmer des rappels personnalisés ?,,"Oui ! 📲 Dans la section Reminders, vous pouvez créer des alarmes pour ce que vous voulez : petit-déj 🥞, collation 🍪, sport 🏋️‍♂️, hydratation 💦... C’est vous qui décidez de l’heure ⏰ et du thème !"
+notifications,Je peux recevoir une alerte pour boire de l’eau ?,,"Tout à fait ! 🤖 BiteWise vous donne la main pour créer des rappels personnalisés dans l’onglet Reminders. Choisissez l’événement (repas 🍽️, sport 💪, hydratation 🚰...) et définissez l’heure qui vous convient ! 📅"
+notifications,Comment BiteWise m’aide à me souvenir de mes objectifs ?,,Pas de panique 😌 ! BiteWise t’envoie des notifications régulières 📲 pour te rappeler tes objectifs 🎯 et t’encourager à rester sur la bonne voie. Tu peux même définir toi-même les rappels dans Reminders ! 🔔
+notifications,Y’a-t-il des notifications automatiques dans l’application ?,,"Oui ! 🟢 BiteWise envoie automatiquement des notifications 📲 avec des conseils santé 🥗, des rappels d’hydratation 💧, et d'autres astuces pour t’aider à rester sur la bonne voie 💪 !"
+notifications,"Je veux être rappelé quand je dois manger, c’est possible ?",,"Oui c’est tout à fait possible ! ⏰ Dans la section Reminders, tu peux programmer des rappels pour tes repas 🍽️, que ce soit le petit-déjeuner 🥐, le déjeuner 🍲 ou même un snack 🍎. Tu choisis l’heure et BiteWise te prévient !"
+notifications,Est-ce que l’app peut m’envoyer des conseils chaque jour ?,,"Absolument ! 🤖 L’application te partage régulièrement des conseils utiles sur la nutrition 🍽️, la santé 🧠 et l’hydratation 💦 sans que tu aies besoin de les programmer toi-même !"
+notifications,Je peux choisir l’heure des notifications ?,,"Absolument ! 😄 C’est toi qui choisis l’heure des rappels dans BiteWise. Tu vas dans Reminders, tu sélectionnes ton événement et tu règles l’heure qui te convient ! 🔔🎯"
+notifications,BiteWise m’envoie des rappels pour rester en bonne santé ?,,"Oui, BiteWise pense à toi 💚 ! L’app t’envoie régulièrement des rappels 📲 pour t’encourager à manger équilibré 🥗, t’hydrater 💧 et bouger un peu 🏃‍♂️. Tout pour rester en bonne santé !"
+notifications,Peut-on créer des rappels pour s’hydrater ?,,Tout à fait ! ⏰ BiteWise te rappelle chaque matin de boire tes 2L d'eau 💦. L’app t’aide à rester bien hydraté(e) pendant la journée avec des rappels réguliers. 💧🧠
+notifications,Est-ce que je peux mettre un rappel pour faire du sport ?,,"Bien sûr ! Vous pouvez aller dans la section Reminders 🔔 pour programmer des rappels comme le sport 🏃, vos repas 🍲, ou même juste penser à respirer et boire de l’eau 💧. Tout est personnalisable ! 😊"
+notifications,"J’oublie souvent de boire, BiteWise peut m’aider ?",,"Pas de souci ! 😅 BiteWise pense à toi chaque matin avec un rappel pour boire de l'eau 💧 et t’aider à atteindre tes objectifs d’hydratation. Plus d’oublis, juste de l’eau à boire ! 🧃"
+notifications,Y’a-t-il des notifications pour me motiver ?,,Oui ! 😃 BiteWise te partage des conseils santé personnalisés 📲 pour t'aider à rester motivé et sur la bonne voie. Ces recommandations sont envoyées automatiquement pour te rappeler de prendre soin de toi au quotidien !
+notifications,Est-ce que je peux recevoir des conseils santé réguliers ?,,"Bien sûr ! 💡 Chaque jour, BiteWise t’envoie des conseils santé adaptés à ton profil 🧘‍♀️. L’application t’aide à améliorer ton alimentation 🍽️ et ton bien-être général avec des astuces pratiques. 🏋️‍♂️"
+notifications,Je peux configurer des alarmes selon mes besoins ?,,"Absolument ! 🔔 Tu as la liberté de personnaliser tes rappels dans l’app BiteWise. Tu peux définir des alarmes pour chaque activité (petit-déjeuner 🥐, sport 🏃‍♂️, ou même boire de l’eau 💦) selon ton emploi du temps !"
+notifications,BiteWise propose des notifications sur l’alimentation ?,,"Oui, totalement ! 🍽️ BiteWise t’envoie des notifications régulières pour te rappeler tes repas 🥘 et t’offrir des conseils pour bien manger 🍎. Ces rappels t’aident à rester sur la bonne voie ! 💪"
+notifications,L’app peut m’envoyer des rappels pour mes objectifs ?,,"Oui, en effet ! 📅 BiteWise peut t’envoyer des rappels pour t’aider à atteindre tes objectifs, qu’il s’agisse d’une bonne alimentation 🥗, d’une routine de sport 🏃‍♂️ ou même d’hydratation 💦. Rien n’est oublié avec ces alertes régulières ! 📲"
+notifications,Comment je reçois les alertes de santé ?,,"Oui, bien sûr ! 🥑 BiteWise propose des notifications sur ton alimentation 🍔. Que ce soit pour te rappeler de manger ou pour t’offrir des conseils santé 🍏, l’app t’accompagne tout au long de ta journée !"
+notifications,Je peux choisir le type de rappel que je veux ?,,"Oui, tu peux ! 🎉 Dans Reminders, tu choisis le type de rappel que tu veux recevoir, que ce soit pour manger 🍽️, t’hydrater 💧 ou faire du sport 🏃‍♀️. L’app s’adapte à tes priorités !"
+notifications,Est-ce que je peux être notifié automatiquement quand il faut faire une pause ?,,"Oui, absolument ! ⏰ BiteWise peut t'envoyer une notification automatique pour te rappeler de faire une pause 🧘‍♀️, que ce soit pour te détendre, boire de l’eau 💧 ou simplement t’étirer. Un petit rappel pour bien prendre soin de toi au quotidien !"
+,,,
+security,Que faire si j'ai oublié mon mot de passe ?,,"Pas de panique ! 😌 Si tu oublies ton mot de passe, clique sur ""Mot de passe oublié ?"". Un lien de réinitialisation sera envoyé à ton adresse e-mail pour te permettre de le changer 🔑📧."
+security,Comment réinitialiser mon mot de passe ?,,"C’est simple ! 🔑 Clique sur ""Mot de passe oublié ?"" sur l’écran de connexion, et tu recevras un e-mail avec un lien pour réinitialiser ton mot de passe 🚀. Assure-toi de choisir un mot de passe sécurisé !"
+security,Est-ce que mes informations sont en sécurité dans l’application ?,,"Oui, absolument ! 🔐 Tes informations sont totalement sécurisées. Les mots de passe sont hachés avant d’être stockés dans la base de données, ce qui garantit leur sécurité 🔒. Tes données sont protégées !"
+security,Est-ce que mon mot de passe est stocké en toute sécurité ?,,"Oui, ton mot de passe est entièrement sécurisé ! 🔒 Il est haché avant d'être enregistré dans la base de données, ce qui rend impossible sa récupération même en cas de piratage 🛡️. Ta sécurité est notre priorité !"
+security,Puis-je changer mon mot de passe à tout moment ?,,"Bien sûr ! 🔑 Si tu veux changer ton mot de passe, va dans les paramètres de sécurité de l’application et choisis l'option pour le modifier. Assure-toi de choisir un mot de passe robuste 🔐 pour plus de sécurité !"
+security,Que faire si je n'ai pas reçu le lien pour réinitialiser mon mot de passe ?,,"Si tu n’as pas reçu le lien, vérifie dans ta boîte de réception, y compris dans tes spams 📧. Si ce n’est toujours pas là, essaie de le renvoyer ou contacte notre support technique pour t’aider 💬."
+security,Est-ce que mes données sont protégées en cas de piratage ?,,"Oui, toutes tes données sont protégées ! 🔐 Même si quelqu’un essaie de pirater la base de données, les mots de passe sont hachés, donc ils ne peuvent pas être récupérés 🛡️. Ta sécurité est notre priorité numéro 1 !"
+security,Comment savoir si mon mot de passe est assez sécurisé ?,,"Pour un mot de passe sécurisé, utilise une combinaison de lettres majuscules, minuscules, chiffres et symboles 🧑‍💻🔐. Plus ton mot de passe est complexe, plus il est difficile à pirater ! N’hésite pas à utiliser un gestionnaire de mots de passe pour plus de sécurité 🔑."
+security,Le mot de passe est-il crypté ?,,Oui ! 🔐 Les mots de passe sont cryptés et hachés avant d’être stockés dans notre base de données. Cela rend ton mot de passe totalement sécurisé et inaccessible à toute personne non autorisée 🔒.
+security,,,
+,,,
+key_words,Comment le BMC est-il calculé dans l’application ?,,"Le BMC est calculé automatiquement dans l’application en fonction de ton poids et de ta taille 📏⚖️. Il se met à jour dès que tu modifies ton poids dans l’app, te donnant une estimation précise de ton indice corporel 💪."
+key_words,Quand dois-je mettre à jour mon poids pour régénérer mon BMC ?,,L’application t’enverra une notification chaque mois 📅 pour te rappeler de mettre à jour ton poids 🔄. Cela permet de régénérer automatiquement ton BMC et de suivre l’évolution de ta santé en temps réel 📊.
+key_words,Pourquoi l’application me demande-t-elle de mettre à jour mon poids ?,,C’est pour s’assurer que ton BMC reste à jour et reflète précisément ton état corporel actuel 👌. L’application t’envoie une notification chaque mois pour que tu puisses facilement mettre à jour ton poids et garder un suivi optimal 🏃‍♀️
+key_words,Est-ce que l’application m’aide à suivre mon BMC ?,,"Oui, l’application calcule ton BMC automatiquement et te rappelle chaque mois de mettre à jour ton poids 📲. Ainsi, tu peux suivre ton indice corporel en temps réel et voir comment il évolue au fil du temps 💡"
+key_words,Quelle est la plage normale du BMC ?,,"Un BMC normal est généralement compris entre 18,5 et 24,9 📊. Si ton BMC est supérieur à 25, tu es dans la catégorie du surpoids, et au-dessus de 30, cela peut indiquer de l’obésité ⚠️. Il est toujours bon de consulter un professionnel de santé pour une évaluation plus précise 👩‍⚕️. T'inquiétes, BiteWise se charge du calcul du BMC d'une manière automatique puis elle génére la catégorie adéquate, dans le profil"
+,,, 
+Delete_Account,Que se passe-t-il si je supprime mon compte ?,,"Si tu choisis de supprimer ton compte, toutes tes données seront supprimées de manière définitive 🗑️. Une fois le compte supprimé, tu ne pourras pas récupérer tes informations, alors réfléchis bien avant de procéder 🔒."
+Delete_Account,Comment puis-je supprimer mon compte ?,,"Pour supprimer ton compte, il te suffit de te rendre dans les paramètres de ton profil, puis de cliquer sur ""Supprimer le compte"". Après cela, toutes tes données seront effacées définitivement ❌."
+Delete_Account,Est-ce que je peux récupérer mes données après avoir supprimé mon compte ?,,"Non, une fois que ton compte est supprimé, toutes tes données sont effacées de manière irréversible 🛑. Assure-toi d’avoir bien sauvegardé tout ce que tu souhaites conserver avant de supprimer ton compte 🔒."
+Delete_Account,Pourquoi supprimer mon compte supprime-t-il toutes mes données ?,,"Lorsque tu supprimes ton compte, pour ta sécurité et ta vie privée, toutes tes données sont effacées définitivement 🗑️. Cela garantit que tes informations personnelles ne sont plus stockées ou accessibles après la suppression 💻."
+Delete_Account,Y a-t-il une confirmation avant de supprimer mon compte ?,,"Oui, après avoir cliqué sur ""Supprimer le compte"", tu recevras une demande de confirmation pour t'assurer que c’est bien ce que tu veux faire 🛑. Si tu es sûr(e), ta demande sera traitée et ton compte sera définitivement supprimé 🚮."
+,,,
+coach-interaction,Comment trouver un coach nutritionnel ?,,"🔍 Pour trouver un coach, accédez à la section ""Coachs"" et explorez les profils disponibles. Vous pouvez filtrer par spécialité, expérience ou lieu d’exercice."
+coach-interaction,Où puis-je voir la liste des experts disponibles ?,,"📋 La liste des experts est disponible dans la section ""Explorer les coachs"". Vous y verrez leurs profils, spécialités et expériences."
+coach-interaction,Comment envoyer une demande à un coach ?,,"📤 Pour envoyer une demande, cliquez sur le profil du coach de votre choix et sélectionnez ""Envoyer une demande de connexion""."
+coach-interaction,Puis-je voir les spécialités des coachs ?,,"🧠 Oui, chaque coach présente ses spécialités, son expérience et sa bio directement dans son profil."
+coach-interaction,Comment savoir si un coach a accepté ma demande ?,,"✅ Consultez la section ""Mes demandes"". Vous y verrez si votre demande est en attente, acceptée ou refusée."
+coach-interaction,"J’ai envoyé une demande, comment suivre son statut ?",,"📊 Vous pouvez suivre le statut de vos demandes dans l’onglet ""Demandes envoyées"" de votre tableau de bord."
+coach-interaction,Comment choisir un coach actif ?,,"🎯 Une fois que plusieurs coachs ont accepté vos demandes, vous pouvez sélectionner votre coach actif dans la liste."
+coach-interaction,"Je veux parler à mon coach, comment faire ?",,"💬 Si votre demande a été acceptée, rendez-vous dans la messagerie intégrée pour échanger directement avec votre coach."
+coach-interaction,Où se trouve la messagerie avec mon coach ?,,"📱 La messagerie est accessible depuis l’espace ""Coaching actif"". Vous y verrez tous vos échanges avec votre coach."
+coach-interaction,Puis-je changer de coach ?,,"🔄 Oui, vous pouvez changer de coach en sélectionnant un autre coach parmi ceux ayant accepté votre demande."
+coach-interaction,Comment mettre fin à une relation avec un coach ?,,"❌ Vous pouvez mettre fin à la relation via le profil de votre coach actif en cliquant sur ""Mettre fin à la relation""."
+coach-interaction,Comment bloquer un coach ?,,"🚫 Depuis le profil de votre coach actif, vous avez l’option ""Bloquer le coach"" si nécessaire."
+coach-interaction,Est-ce que je peux envoyer un message à mon coach ?,,"📩 Oui ! Une fois connecté, utilisez la messagerie intégrée pour poser des questions ou demander un suivi."
+coach-interaction,Puis-je demander un plan personnalisé à mon coach ?,,📝 Bien sûr ! Il vous suffit de contacter votre coach dans la messagerie et de demander un plan nutritionnel personnalisé.
+coach-interaction,Où sont mes demandes de connexion envoyées ?,,"📬 Rendez-vous dans l’onglet ""Mes demandes"" pour consulter toutes les demandes envoyées."
+coach-interaction,Puis-je voir les demandes acceptées par les coachs ?,,"🟢 Oui, dans la même section, vous verrez les demandes acceptées avec possibilité de choisir un coach actif."
+coach-interaction,Comment noter mon coach après une période de suivi ?,,⭐ Vous pouvez noter votre coach dans son profil une fois la relation terminée ou après une période d'accompagnement.
+coach-interaction,Je peux voir la bio et l’expérience d’un coach avant de me connecter ?,,"📖 Bien sûr ! Avant d’envoyer une demande, consultez la bio, spécialité, expérience et lieu d'exercice sur son profil."
+coach-interaction,Quels types de coachs sont disponibles sur la plateforme ?,,"🧑‍🏫 Sur BiteWise, vous pouvez vous connecter avec deux types d'experts : les coachs sportifs pour le suivi physique 🏋️‍♂️ et les nutritionnistes pour l’accompagnement alimentaire 🥗. Choisissez celui qui correspond le mieux à vos objectifs santé !"
+,,,
+advices,Combien d’eau je devrais boire par jour ?,,"En général, vise 1.5 à 2 litres par jour 💧, mais ça dépend aussi de ton activité et de la température 🌞. Bois un peu tout au long de la journée, pas tout d’un coup 😉"
+advices,Tu as un conseil pour bien m’hydrater ?,,"Garde une bouteille d’eau toujours près de toi 🧴, ajoute des rondelles de citron 🍋 ou de concombre 🥒 pour donner du goût, et pense à boire même si tu n’as pas soif."
+advices,Comment je peux boire plus d’eau dans la journée ?,,"Mets une alarme toutes les 2 heures ⏰, utilise une appli pour suivre ta consommation 📱, ou bois un verre à chaque repas et collation 🍽️."
+advices,Comment bien gérer mes calories ?,,"Privilégie les aliments riches en nutriments 🥗, évite les boissons sucrées 🥤, et surveille tes portions 🍛. Un carnet alimentaire ou une appli peut aussi t’aider à suivre ça 📊."
+advices,Tu as une astuce pour ne pas trop manger ?,,"Mange lentement 🍴, pose ta fourchette entre les bouchées 🧠, et écoute tes signaux de satiété 😌. Ton corps sait quand il en a assez."
+advices,Est-ce que je dois compter mes calories ?,,"Pas forcément 🤓 ! L’important c’est d’avoir une alimentation équilibrée 🌈. Mais si tu veux atteindre un objectif précis, suivre tes apports peut être utile 📋."
+advices,Marcher c’est utile pour la santé ?,,"Oui ! Marcher 30 minutes par jour améliore la digestion, réduit le stress et booste ton énergie ⚡. C’est simple et super efficace 💯."
+advices,Tu conseilles combien de pas par jour ?,,"L’idéal est de viser 8000 à 10 000 pas par jour 🚶‍♀️📱. Mais même 15 minutes de marche après chaque repas, c’est déjà top pour ta santé 💪."
+advices,Comment je peux bouger plus dans ma journée ?,,"Prends les escaliers 🏃‍♂️, fais une pause active toutes les heures ⏳, ou marche en téléphonant 📞. Chaque petit mouvement compte !"
+advices,Tu as un conseil bien-être pour aujourd’hui ?,,"Bien sûr 🌿 ! Prends quelques minutes pour respirer profondément 🧘, éloigne-toi des écrans 👀, et profite d’un moment juste pour toi ☕📖."
+advices,Que faire pour améliorer ma santé chaque jour ?,,"De petits gestes font toute la différence : bien dormir 😴, boire de l’eau 💧, bouger un peu 🚶, manger équilibré 🥗 et surtout… prendre soin de ton mental 🧠❤️."
+advices,Comment avoir plus d’énergie dans la journée ?,,"Dors suffisamment 🛌, commence ta journée par un bon petit-déj 🥣, hydrate-toi 💦 et fais au moins 10 minutes d’activité physique 🏃‍♀️"
+advices,Des astuces pour réduire le stress ?,,"Respire profondément 3 fois 🧘‍♂️, écoute de la musique douce 🎵, fais une courte promenade 🚶‍♂️ ou écris ce que tu ressens 📝. Chaque geste compte."
+advices,Donne-moi un conseil du jour !,,"Aujourd’hui, essaye de manger en pleine conscience 🍽️🧘. Prends 10 minutes sans écran ni distraction pour savourer ton repas. Tu peux noter tes sensations dans BiteWise juste après, c’est super utile pour comprendre ton corps 😊."
+advices,Un tip bien-être pour aujourd’hui ?,,Marche 10 minutes après ton déjeuner 🚶‍♂️💨. C’est bon pour la digestion et ça aide à réguler ta glycémie. Tu peux même l’ajouter dans ton suivi BiteWise pour garder une trace de tes bonnes habitudes 📲.
+advices,Tu as un conseil pour bien commencer la journée ?,,"Commence ta journée par un grand verre d’eau 💧, un petit-déj riche en fibres 🥣 et quelques étirements 🧘‍♀️. N’oublie pas de scanner ton repas sur BiteWise pour bien démarrer côté nutrition ! 📸"
+advices,Dis-moi un conseil santé pour aujourd’hui,,"Essaie de remplir ton assiette avec au moins 3 couleurs différentes 🌈 (ex : brocoli 🥦, carotte 🥕, tomate 🍅). C’est un bon réflexe pour t’assurer d’avoir un repas équilibré. BiteWise t’aidera à repérer les bons apports 👌."
+advices,Une astuce nutrition aujourd’hui ?,,"Privilégie des snacks sains entre les repas 🍏🥜. Une pomme, quelques amandes ou un yaourt nature sont parfaits pour maintenir ton énergie. Tu peux les ajouter facilement dans BiteWise depuis ton tableau nutrition 📱."
+advices,Je veux un conseil motivant pour aujourd’hui,,"Tu avances, même doucement, et c’est déjà génial 💪 ! Pense à enregistrer tes progrès dans BiteWise : chaque repas équilibré, chaque verre d’eau, chaque mouvement compte 🎯. Garde le cap !"
+advices,Une routine bien-être rapide pour aujourd’hui ?,,"Planifie tes repas sur BiteWise ce matin 📅, bois 1 verre d’eau à chaque pause 💧, et accorde-toi 10 minutes de calme sans téléphone ce soir 📵🌙. Simple, mais puissant 💫."
+,,,
+,,,
+get_nutrition_info,Infos nutritionnelles pour une pomme,pomme,"Une pomme moyenne (~182g) contient environ 95 kcal, 0.5g de protéines, 0.3g de lipides, 25g de glucides (dont 19g de sucre et 4.4g de fibres)."
+get_nutrition_info,Valeurs nutritionnelles de 100g de poulet grillé,100g de poulet grillé,"Pour 100g de poulet grillé : ~165 kcal, 31g de protéines, 3.6g de lipides, 0g de glucides."
+get_nutrition_info,Donne-moi le détail nutritionnel du riz blanc cuit,riz blanc cuit,"Une tasse de riz blanc cuit (~158g) : ~205 kcal, 4.3g de protéines, 0.4g de lipides, 45g de glucides (dont 0.6g de fibres)."
+get_nutrition_info,Tableau nutritionnel avocat,avocat,"Un demi-avocat (~100g) : ~160 kcal, 2g de protéines, 15g de lipides (surtout insaturés), 9g de glucides (dont 7g de fibres)."
+get_nutrition_info,Quelles sont les macros pour les amandes ?,amandes,"Pour 28g d'amandes : ~164 kcal, 6g de protéines (P), 14g de lipides (L), 6g de glucides (G)."
+get_nutrition_info,Peux-tu me donner les calories et les protéines d'une tranche de pain complet ?,tranche de pain complet,Peux-tu me donner les calories et les protéines d'une tranche de pain complet ?
+get_nutrition_info,"Je veux les glucides, lipides et fibres pour le brocoli vapeur",brocoli vapeur,"Pour 100g de brocoli vapeur : ~55 kcal, 3.7g de protéines, 0.6g de lipides, 11g de glucides (dont 5g de fibres)."
+get_nutrition_info,"Calories, sucre et gras dans une banane ?",banane,Une------
+get_nutrition_info,Détails pour 100g de saumon cuit,100g de saumon cuit,"100g de saumon cuit : ~208 kcal, 20g prot, 13g lip (riche en Oméga-3), 0g gluc."
+get_nutrition_info,Donne-moi le tableau nutritionnel de 100g de poulet grillé,100g de poulet grillé,"Pour 100g de poulet grillé : ~165 kcal, 31g prot, 3.6g lip, 0g gluc."
+get_nutrition_info,Quelles sont les valeurs nutritionnelles du riz blanc cuit ?,riz blanc cuit,"Pour une tasse (158g) de riz blanc cuit : ~205 kcal, 4.3g prot, 0.4g lip, 45g gluc (dont 0.6g fibres)."
+get_nutrition_info,"Qu'y a-t-il dans deux œufs durs, nutritionnellement parlant ?",deux œufs durs,"Deux banane moyenne (~118g) contient environ 105 kcal, 14g de sucre et moins de 0.5g de gras (lipides)."
+get_nutrition_info,Dis-moi tout sur le saumon grillé nutritionnellement.,saumon grillé,"100g de saumon grillé : ~208 kcal, 22g de protéines, 13g de lipides (riche en oméga-3), 0g de glucides."
+get_nutrition_info,"Lait demi-écrémé, détails nutrition ?",Lait demi-écrémé,"Pour 100ml de lait demi-écrémé : ~47 kcal, 3.4g de protéines, 1.6g de lipides, 4.8g de glucides (lactose)."
+get_nutrition_info,Quelle est la composition nutritionnelle du yaourt grec nature ?,yaourt grec nature,"Pour 100g de yaourt grec nature 0% : ~59 kcal, 10g de protéines, 0.4g de lipides, 3.6g de glucides."
+get_nutrition_info,Glucides et fibres dans les lentilles vertes cuites,lentilles vertes cuites,"100g de lentilles vertes cuites : ~116 kcal, 9info`"
+get_nutrition_info,Apport nutritionnel complet pour 50g de flocons d'avoine,50g de flocons d'avoine,"50g de flocons d'avoine crus : ~190 kcal, 8.5g de protéines, 3.5g de lipides, 33g de glucides (dont 5g de fibres)."
+get_nutrition_info,"Détail calories, protéines, lipides pour 100g de tofu ferme",100g de tofu ferme,"Pour 100g de tofu ferme : environ 145 kcal, 16g deg prot, 0.4g lip, 20g gluc (dont 8g fibres)."
+get_nutrition_info,Infos nutritionnelles salade niçoise,salade niçoise,"Très variable ! Dépend des ingrédients (thon, œufs, olives, anchois...) et de la vinaigrette. Peut aller de 300 à 600+ kcal. Difficile sans recette précise."
+get_nutrition_info,Lipides et calories pour un croissant au beurre,croissant au beurre,"Un croissant moyen (57g) : ~230 kcal, 5g prot, 12g lip, 26g gluc."
+get_nutrition_info,Valeurs nutritionnelles 30g de chocolat au lait,30g de chocolat au lait,"Pour 30g de chocolat au lait : ~160 kcal, 2.3g prot, 9g lip (souvent saturés), 17g gluc (dont ~15g sucre)."
+get_nutrition_info,Détails pour 250ml de soupe de tomate en brique,250ml de soupe de tomate en brique,"Pour 250ml (un bol) de soupe tomate en brique : ~150-200 kcal, ~3-5g prot, ~5-8g lip, ~18-25g gluc (dont ~10-15g sucre, ~3-5g fibres). Varie selon marque/recette."
+get_nutrition_info,Composition d'une tranche de jambon blanc,tranche de jambon blanc,"Une tranche de jambon blanc (~30g) : ~30-40 kcal, ~5-6g prot, ~1-2g lip, <1g gluc. Teneur en sel à surveiller."
+get_nutrition_info,Données pour 100ml de crème fraîche épaisse (30% MG),100ml de crème fraîche épaisse (30% MG),"Pour 100ml de crème fraîche 30% MG : ~292 kcal, 2.3g prot, 30g lip (majorité saturés), 3.1g gluc."
+get_nutrition_info,Tout sur le beurre de cacahuète (1 cuillère),beurre de cacahuète (1 cuillère),"Une cuillère à soupe de beurre de cacahuète (~16g) : ~95 kcal, 4g prot, 8g lip, 3.5g gluc (dont 1g fibres, 1.5g sucre). Choisir versions sans sucre/huile ajoutés."
+get_nutrition_info,Infos pour un matcha latte (fait avec lait d'amande),matcha latte (fait avec lait d'amande),"Pour un matcha latte moyen (~350ml) au lait d'amande non sucré : ~50-80 kcal, 1-2g prot, 3-5g lip, 5-10g gluc (varie si sucré). Contient des antioxydants du matcha."
+get_nutrition_info,Valeurs pour une salade verte simple avec vinaigrette légère,salade verte simple avec vinaigrette légère,
+get_nutrition_info,Quelles sont les stats nutritionnelles d'une barre protéinée type Quest ?,barre protéinée type Quest,"Une barre Quest typique : ~180-210 kcal, ~20g prot, ~7-9g lip, ~20-25g gluc (dont ~15g fibres, ~1g sucre net, édulcorants)."
+get_nutrition_info,Valeurs pour une part de gâteau au chocolat maison,part de gâteau au chocolat maison,"Extrêmement variable ! Une part peut aller de 300 à 600+ kcal. Dépend de la recette (beurre, sucre, chocolat, glaçage...). Difficile de donner des valeurs sans plus de détails."
+get_nutrition_info,Tout sur la dinde hachée (100g cuite),dinde hachée (100g cuite)	,"100g de dinde hachée cuite (~7% MG crue) : ~170 kcal, ~28g prot, ~6g lip, 0g gluc. Alternative plus maigre au bœuf haché."
+get_nutrition_info,Analyse pour le sirop d'érable (1 cuillère à soupe),sirop d'érable (1 cuillère à soupe),"Une cuillère à soupe (~20g) de sirop d'érable : ~52 kcal, 0g prot/lip, 13.5g gluc (dont 12g sucre). Contient quelques minéraux (manganèse, zinc)."
+get_nutrition_info,Détails nutritionnels Ojja Merguez,Ojja Merguez,"Riche et savoureux ! Une portion d'Ojja Merguez peut varier de 400 à 700 kcal. Dépend de la quantité d'huile, d'œufs et de merguez (qui sont grasses). Apporte protéines et lipides"
+get_nutrition_info,Composition du Lablabi,Lablabi,"Plat roboratif à base de pois chiches. Un bol peut aller de 400 à 600 kcal. Apporte protéines végétales, fibres, glucides (pois chiches, pain). La quantité d'huile, harissa et thon/œuf influence beaucoup."
+get_nutrition_info,Infos nutritionnelles Chorba Frik,Chorba Frik,"Soupe à base de blé vert concassé (frik), souvent avec viande (agneau/poulet), légumes, tomate. Un bol : ~200-400 kcal. Apporte glucides complexes, fibres, protéines. Dépend du gras de la viande."
+get_nutrition_info,Macros pour le Kefteji,Kefteji,"Plat populaire à base de légumes frits (pdt, poivron, tomate, courgette), œuf frit, souvent servi avec merguez/foie. Très riche en lipides (friture). ~500-800+ kcal par assiette."

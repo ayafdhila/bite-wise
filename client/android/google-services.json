@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "770007658347",
+    "project_id": "bitewise-4d93e",
+    "storage_bucket": "bitewise-4d93e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:770007658347:android:c7dabf1079c56936a9e62e",
+        "android_client_info": {
+          "package_name": "com.pfe.BiteWise"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "770007658347-kakh3u6u63873b8bcbav9h6b3jmefr8u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pfe.BiteWise",
+            "certificate_hash": "332948252de28500561720eb7de5920b00e5193f"
+          }
+        },
+        {
+          "client_id": "770007658347-fk52e7fhtq0bmep921sajvlosvh5kgep.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-J2dFXpLp4yIZbmapCOxLHKNWvnmE8lA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "770007658347-fk52e7fhtq0bmep921sajvlosvh5kgep.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "770007658347-g34junm3haq9ng0i2m6ja4k1bcbcqisv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.pfe.BiteWise"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
