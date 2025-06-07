@@ -1,0 +1,50 @@
+// client/tsconfig.json
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    // "allowSyntheticDefaultImports": true, // Already enabled by esModuleInterop typically
+    "jsx": "react-native",
+    // "lib": ["dom", "esnext"], // "dom" is usually not needed for React Native unless you have web-specific code
+    "lib": ["esnext"], // More common for React Native
+    "moduleResolution": "node",
+    // "noEmit": true, // For Expo, 'noEmit' is often true as Babel handles final emit. Keep if it works.
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": true,         // Good: Allows TS to recognize .js files
+    "checkJs": false,        // Good: Doesn't type-check .js files by default
+
+    "baseUrl": ".",        // <--- KEY: Sets the base for path resolution to the project root (client/)
+    "paths": {
+      // "@/*": ["src/*"],             // OLD - Incorrect for no src/
+      "@/*": ["*"]                  // NEW - Tells TS that "@/" followed by anything (*)
+                                     // should be looked for starting from the baseUrl (.)
+                                     // e.g., "@/components/AuthContext" becomes "./components/AuthContext"
+                                     // e.g., "@/types/domain" becomes "./types/domain"
+      // You can also be more explicit if you prefer and list each main directory:
+      // "@/components/*": ["components/*"],
+      // "@/services/*": ["services/*"],
+      // "@/types/*": ["types/*"],
+      // "@/utils/*": ["utils/*"],
+      // "@/features/*": ["features/*"]
+      // But "@/*": ["*"] is a common shorthand when baseUrl is "."
+    }
+    // "typeRoots": ["./node_modules/@types", "./env.d.ts"] // Keep if you have custom global type declarations in env.d.ts
+  },
+  "include": [
+    "**/*.ts",    // Includes all .ts files in client/ and its subdirectories
+    "**/*.tsx",   // Includes all .tsx files in client/ and its subdirectories
+    "App.js",     // Includes your root App.js
+    "env.d.ts"    // Includes your environment type declarations
+    // If you have other specific root JS files you want TS to be aware of, add them here.
+    // Or if ALL your components are JS: "components/**/*.js", "components/**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "android", // Good to exclude platform-specific build folders
+    "ios"
+    // "babel.config.js", // Already excluded by default from compilation typically
+    // "metro.config.js"  // Already excluded by default
+  ]
+}

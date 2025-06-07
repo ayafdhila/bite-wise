@@ -23,21 +23,56 @@ try {
     firebaseInstances.auth = admin.auth();
     firebaseInstances.storage = admin.storage();
   } else {
-    // --- Service Account Path ---
-    const serviceAccountRelativePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-    console.log("[Firebase Init] Service Account Path from .env:", serviceAccountRelativePath);
-    if (!serviceAccountRelativePath) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT_PATH environment variable is not defined or empty.");
+    // --- Service Account Configuration ---
+    let serviceAccount;
+    
+    // Check if we should use environment variables or JSON file
+    const useEnvVars = process.env.FIREBASE_USE_ENV_VARS === 'true';
+    
+    if (useEnvVars) {
+      console.log("[Firebase Init] Using environment variables for service account...");
+      
+      // Create service account object from environment variables
+      serviceAccount = {
+        type: process.env.FIREBASE_TYPE,
+        project_id: process.env.FIREBASE_PROJECT_ID,
+        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+        private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        client_email: process.env.FIREBASE_CLIENT_EMAIL,
+        client_id: process.env.FIREBASE_CLIENT_ID,
+        auth_uri: process.env.FIREBASE_AUTH_URI,
+        token_uri: process.env.FIREBASE_TOKEN_URI,
+        auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+        client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+        universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN
+      };
+
+      // Validate required environment variables
+      if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+        throw new Error("Missing required Firebase environment variables. Check your .env file for FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL.");
+      }
+      
+      console.log("[Firebase Init] Service account loaded from environment variables for project:", serviceAccount.project_id);
+      
+    } else {
+      console.log("[Firebase Init] Using JSON file for service account...");
+      
+      // Original JSON file logic
+      const serviceAccountRelativePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+      console.log("[Firebase Init] Service Account Path from .env:", serviceAccountRelativePath);
+      if (!serviceAccountRelativePath) {
+        throw new Error("FIREBASE_SERVICE_ACCOUNT_PATH environment variable is not defined or empty.");
+      }
+      const serviceAccountAbsolutePath = path.resolve(__dirname, '../', serviceAccountRelativePath);
+      console.log("[Firebase Init] Resolved absolute path for service account:", serviceAccountAbsolutePath);
+      if (!fs.existsSync(serviceAccountAbsolutePath)) {
+        throw new Error(`Service account file NOT FOUND at resolved path: ${serviceAccountAbsolutePath}. Check path in .env and file location.`);
+      }
+      console.log("[Firebase Init] Service account file found.");
+      const serviceAccountJson = fs.readFileSync(serviceAccountAbsolutePath, 'utf8');
+      serviceAccount = JSON.parse(serviceAccountJson);
+      console.log("[Firebase Init] Service account loaded successfully for project:", serviceAccount.project_id);
     }
-    const serviceAccountAbsolutePath = path.resolve(__dirname, '../', serviceAccountRelativePath);
-    console.log("[Firebase Init] Resolved absolute path for service account:", serviceAccountAbsolutePath);
-    if (!fs.existsSync(serviceAccountAbsolutePath)) {
-      throw new Error(`Service account file NOT FOUND at resolved path: ${serviceAccountAbsolutePath}. Check path in .env and file location.`);
-    }
-    console.log("[Firebase Init] Service account file found.");
-    const serviceAccountJson = fs.readFileSync(serviceAccountAbsolutePath, 'utf8');
-    const serviceAccount = JSON.parse(serviceAccountJson);
-    console.log("[Firebase Init] Service account loaded successfully for project:", serviceAccount.project_id);
 
     // --- Storage Bucket URL ---
     const storageBucketUrl = process.env.FIREBASE_STORAGE_BUCKET;
