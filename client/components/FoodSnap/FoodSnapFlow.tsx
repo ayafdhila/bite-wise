@@ -2,6 +2,7 @@ import { CameraView } from "@/components/FoodSnap/CameraView";
 import { ImagePreview } from "@/components/FoodSnap/ImagePreview";
 import { NutritionDisplay } from "@/components/FoodSnap/NutritionDisplay";
 import { GeminiVisionService } from "@/services/GeminiVisionService";
+import Header from "../Header";
 import type {
   AnalysisState,
   FoodAnalysisResult,
@@ -13,6 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useRef, useState } from "react"; 
 import { Alert, Animated, Button, StyleSheet, Text, View } from "react-native"; 
+
 
 const IMAGE_QUALITY_THRESHOLD = 0.4; 
 
@@ -42,17 +44,19 @@ export interface FoodSnapFlowProps {
    * Callback triggered if the user decides to exit or cancel the flow
    * before completing a meal log.
    */
-  onFlowCancel?: () => void;
+  onFlowCancel: () => void;
   /**
    * Optional user ID to associate with the logged meal.
    * Useful for personalizing experiences or storing data under a specific user account.
    */
-  userId?: string;
+  userId: string;
   /**
    * Optional theme object to customize the appearance of the FoodSnapFlow module.
    * Allows the component to adapt to the host application's look and feel.
    */
   theme?: Partial<FoodSnapFlowTheme>; // Theme prop for custom styling
+  initialStep?: FlowStep; // Add this
+  preferredSource?: 'camera' | 'gallery'; // Add this
 }
 
 type FlowStep =
@@ -76,21 +80,30 @@ type FlowStep =
  * @returns {React.ReactElement} The rendered FoodSnapFlow component.
  */
 export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
-  const { theme = {} } = props; // Destructure theme with a default empty object
-  const [currentStep, setCurrentStep] = useState<FlowStep>("initialChoice"); // Start with "initialChoice"
+  // START with your regular hooks
+  const { theme = {} } = props;
+  
+  const [currentStep, setCurrentStep] = useState<FlowStep>(() => {
+    if (props.preferredSource === 'camera') {
+      return 'camera';
+    } else if (props.preferredSource === 'gallery') {
+      return 'initialChoice';
+    }
+    return props.initialStep || 'initialChoice';
+  });
+  
   const [capturedImage, setCapturedImage] = useState<ImageData | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>({
     loading: false,
     result: null,
     error: null,
   });
-  const [geminiService, setGeminiService] =
-    useState<GeminiVisionService | null>(null); // Added state for service instance
-  const [rejectionReason, setRejectionReason] = useState<string | null>(null); // Added state for rejection reason
-  const resultsFadeAnim = useRef(new Animated.Value(0)).current; // Animation for results
+  const [geminiService, setGeminiService] = useState<GeminiVisionService | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const resultsFadeAnim = useRef(new Animated.Value(0)).current;
 
   // Initialize GeminiVisionService
-  React.useEffect(() => {
+  useEffect(() => {
     try {
       // Use apiKey from props if available, otherwise it will use from .env
       const service = new GeminiVisionService(props.apiKey);
@@ -170,8 +183,17 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
     setCapturedImage(null);
     setAnalysisState({ loading: false, result: null, error: null });
     setRejectionReason(null); // Clear rejection reason
-    setCurrentStep("initialChoice"); // Go back to choice screen
-  }, []);
+    
+    // Return to appropriate step based on preferred source
+    if (props.preferredSource === 'camera') {
+      setCurrentStep("camera");
+    } else if (props.preferredSource === 'gallery') {
+      // For gallery, we'll trigger the picker again via useEffect
+      setCurrentStep("initialChoice");
+    } else {
+      setCurrentStep("initialChoice"); // Default behavior
+    }
+  }, [props.preferredSource]);
 
   const handleAnalyzeImage = useCallback(async () => {
     if (!capturedImage || !geminiService) return; // Ensure service is initialized
@@ -289,93 +311,184 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
     props.onFlowCancel,
   ]); // Added analysisState.result to dependencies
 
+  // Handle gallery selection when preferred source is gallery
+  useEffect(() => {
+    if (props.preferredSource === 'gallery' && currentStep === 'initialChoice') {
+      // Small delay to ensure component is mounted
+      const timer = setTimeout(() => {
+        handleImageSelectedFromGallery();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [props.preferredSource, currentStep, handleImageSelectedFromGallery]);
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case "initialChoice":
+        // Skip this step if we have a preferred source from AddMeal
+        if (props.preferredSource === 'camera') {
+          return (
+            <View style={styles.container}>
+              <Header 
+                showBackButton={true} 
+                onBackPress={() => {
+                  if (props.onFlowCancel) {
+                    props.onFlowCancel();
+                  } else {
+                    setCurrentStep("initialChoice");
+                  }
+                }}
+                subtitle="Capture Your Meal" 
+              />
+              <CameraView
+                onImageCaptured={handleImageCaptured}
+                onClose={() => {
+                  if (props.onFlowCancel) {
+                    props.onFlowCancel();
+                  } else {
+                    setCurrentStep("initialChoice");
+                  }
+                }}
+              />
+            </View>
+          );
+        } else if (props.preferredSource === 'gallery') {
+          // Show loading while gallery is opening
+          return (
+            <View style={styles.container}>
+              <Header 
+                showBackButton={true} 
+                onBackPress={() => {
+                  if (props.onFlowCancel) {
+                    props.onFlowCancel();
+                  }
+                }}
+                subtitle="Opening Gallery..." 
+              />
+              <View style={styles.choiceContainer}>
+                <Text style={styles.choiceTitle}>Opening Gallery...</Text>
+              </View>
+            </View>
+          );
+        }
+        
+        // Default behavior if no preferred source
         return (
-          <View
-            style={[
-              styles.choiceContainer,
-              {
-                backgroundColor:
-                  theme.backgroundColor ||
-                  styles.choiceContainer.backgroundColor,
-              },
-            ]}
-          >
-            <Text
+          <View style={styles.container}>
+            <Header 
+              showBackButton={true} 
+              onBackPress={() => {
+                if (props.onFlowCancel) {
+                  props.onFlowCancel();
+                }
+              }}
+              subtitle="Select Image Source" 
+            />
+            <View
               style={[
-                styles.choiceTitle,
-                { color: theme.textColor || styles.choiceTitle.color },
+                styles.choiceContainer,
+                {
+                  backgroundColor:
+                    theme.backgroundColor ||
+                    styles.choiceContainer.backgroundColor,
+                },
               ]}
             >
-              Select Image Source
-            </Text>
-            <View style={styles.buttonContainer}>
-              <Button
-                title="Take Photo"
-                onPress={() => setCurrentStep("camera")}
-                color={theme.primaryColor} // Use theme color for button
-              />
+              <Text
+                style={[
+                  styles.choiceTitle,
+                  { color: theme.textColor || styles.choiceTitle.color },
+                ]}
+              >
+                Select Image Source
+              </Text>
+              <View style={styles.buttonContainer}>
+                <Button
+                  title="Take Photo"
+                  onPress={() => setCurrentStep("camera")}
+                  color={theme.primaryColor}
+                />
+              </View>
+              <View style={styles.buttonContainer}>
+                <Button
+                  title="Choose from Gallery"
+                  onPress={handleImageSelectedFromGallery}
+                  color={theme.primaryColor}
+                />
+              </View>
             </View>
-            <View style={styles.buttonContainer}>
-              <Button
-                title="Choose from Gallery"
-                onPress={handleImageSelectedFromGallery}
-                color={theme.primaryColor} // Use theme color for button
-              />
-            </View>
-            {/* Optional: Add a close/back button if this flow is part of a larger app */}
           </View>
         );
+
       case "camera":
         return (
-          <CameraView
-            onImageCaptured={handleImageCaptured}
-            onClose={() => {
-              if (props.onFlowCancel) {
-                props.onFlowCancel();
-              } else {
-                setCurrentStep("initialChoice");
-              }
-            }}
-          />
+          <View style={styles.container}>
+            <Header 
+              showBackButton={true} 
+              onBackPress={() => {
+                if (props.onFlowCancel) {
+                  props.onFlowCancel();
+                } else {
+                  setCurrentStep("initialChoice");
+                }
+              }}
+              subtitle="Capture Your Meal" 
+            />
+            {/* CameraView now renders without its own header */}
+            <CameraView
+              onImageCaptured={handleImageCaptured}
+              onClose={() => {
+                if (props.onFlowCancel) {
+                  props.onFlowCancel();
+                } else {
+                  setCurrentStep("initialChoice");
+                }
+              }}
+            />
+          </View>
         );
 
-      case "imageIssue": // Added case for imageIssue
+      case "imageIssue":
         return (
-          <View
-            style={[
-              styles.issueContainer,
-              {
-                backgroundColor:
-                  theme.backgroundColor ||
-                  styles.issueContainer.backgroundColor,
-              },
-            ]}
-          >
-            <Text
+          <View style={styles.container}>
+            <Header 
+              showBackButton={true} 
+              onBackPress={handleRetakePhoto}
+              subtitle="Image Issue" 
+            />
+            <View
               style={[
-                styles.issueTitle,
-                { color: theme.destructiveColor || styles.issueTitle.color },
+                styles.issueContainer,
+                {
+                  backgroundColor:
+                    theme.backgroundColor ||
+                    styles.issueContainer.backgroundColor,
+                },
               ]}
             >
-              Image Problem
-            </Text>
-            <Text
-              style={[
-                styles.issueMessage,
-                { color: theme.textColor || styles.issueMessage.color },
-              ]}
-            >
-              {rejectionReason}
-            </Text>
-            <View style={styles.buttonContainer}>
-              <Button
-                title="Try Again"
-                onPress={handleRetakePhoto}
-                color={theme.primaryColor}
-              />
+              <Text
+                style={[
+                  styles.issueTitle,
+                  { color: theme.destructiveColor || styles.issueTitle.color },
+                ]}
+              >
+                Image Problem
+              </Text>
+              <Text
+                style={[
+                  styles.issueMessage,
+                  { color: theme.textColor || styles.issueMessage.color },
+                ]}
+              >
+                {rejectionReason}
+              </Text>
+              <View style={styles.buttonContainer}>
+                <Button
+                  title="Try Again"
+                  onPress={handleRetakePhoto}
+                  color={theme.primaryColor}
+                />
+              </View>
             </View>
           </View>
         );
@@ -404,7 +517,7 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
           <Animated.View style={{ flex: 1, opacity: resultsFadeAnim }}>
             <NutritionDisplay
               result={analysisState.result}
-              imageDataUri={capturedImage?.uri} //
+              imageDataUri={capturedImage?.uri}
               onEdit={handleEditResult}
               onSave={handleSaveToLog}
               onRetake={handleRetakePhoto}
@@ -431,7 +544,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FAEBD7", 
   },
   choiceContainer: {
-    
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -440,7 +552,7 @@ const styles = StyleSheet.create({
   },
   choiceTitle: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
     marginBottom: 30,
     color: "#333333", 
   },
@@ -449,7 +561,6 @@ const styles = StyleSheet.create({
     width: "80%",
   },
   issueContainer: {
-    
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -458,12 +569,13 @@ const styles = StyleSheet.create({
   },
   issueTitle: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
     color: "#A52A2A", 
     marginBottom: 15,
   },
   issueMessage: {
     fontSize: 16,
+    fontFamily: 'Quicksand_500Medium',
     textAlign: "center",
     marginBottom: 25,
     lineHeight: 22,

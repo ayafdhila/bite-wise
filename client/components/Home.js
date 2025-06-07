@@ -24,36 +24,26 @@ export default function Home() {
   const [uid, setUid] = useState(user?.uid || null);
   const navigation = useNavigation();
   const [plan, setPlan] = useState(defaultPlan);
-
   const [consumedTotals, setConsumedTotals] = useState(defaultConsumed);
-
   const [streak, setStreak] = useState(0);
- 
-  const [userGoalText, setUserGoalText] = useState(''); 
-  
+  const [userGoalText, setUserGoalText] = useState('Set Goal'); 
   const [isLoading, setIsLoading] = useState(true);
  
   const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-
   const DAILY_DATA_ENDPOINT = '/logMeal/daily-data'; 
-
-
   const meals = ['Breakfast', 'Lunch', 'Dinner', 'Snacks']; 
 
-  
   useEffect(() => {
-    
     if (user?.uid && user.uid !== uid) {
       console.log("Home: Setting UID from context:", user.uid);
       setUid(user.uid);
     } else if (!user?.uid && uid !== null) {
-
       console.log("Home: Clearing UID and resetting data due to user logout/null.");
       setUid(null);
       setPlan(defaultPlan);
       setConsumedTotals(defaultConsumed);
       setStreak(0);
-      setUserGoalText('');
+      setUserGoalText('Set Goal');
       setIsLoading(false); 
     }
   }, [user, uid]); 
@@ -79,28 +69,25 @@ export default function Home() {
         setPlan(data.nutritionPlan || defaultPlan);
         setConsumedTotals(data.consumedTotals || defaultConsumed);
         setStreak(data.streak || 0);
-        
-        setUserGoalText(data.nutritionPlan?.goal || user?.goal || 'Set Goal');
+        setUserGoalText(String(data.nutritionPlan?.goal || user?.goal || 'Set Goal'));
       } else {
         console.warn("Home: false", data);
-    
         setPlan(defaultPlan);
         setConsumedTotals(defaultConsumed);
         setStreak(0);
-        setUserGoalText(user?.goal || 'Set Goal');
+        setUserGoalText(String(user?.goal || 'Set Goal'));
       }
     } catch (err) {
       console.error('Error loading daily data:', err.response ? JSON.stringify(err.response.data) : err.message);
-       setPlan(defaultPlan);
-       setConsumedTotals(defaultConsumed);
-       setStreak(0);
-       setUserGoalText(user?.goal || 'Set Goal');
+      setPlan(defaultPlan);
+      setConsumedTotals(defaultConsumed);
+      setStreak(0);
+      setUserGoalText(String(user?.goal || 'Set Goal'));
     } finally {
       setIsLoading(false); 
     }
   }, [uid, user?.goal]); 
 
-  
   useFocusEffect(
     useCallback(() => {
       if (uid) { 
@@ -113,71 +100,109 @@ export default function Home() {
     }, [fetchData, uid]) 
   );
 
-  const goalCalories = plan?.calories || 0;
-  const goalCarbs = plan?.carbs || 0;
-  const goalProtein = plan?.protein || 0;
-  const goalFat = plan?.fat || 0;
-  const goalFiber = plan?.fiber?.recommended || 0; 
+  // Safe number conversion
+  const safeNumber = (value, fallback = 0) => {
+    const num = Number(value);
+    return isNaN(num) ? fallback : num;
+  };
 
+  // Safe string formatter
+  const safeFormatValue = (value, decimals = 0) => {
+    const num = safeNumber(value, 0);
+    return num.toFixed(decimals);
+  };
 
-  const consumedCals = consumedTotals?.calories || 0;
-  const consumedCarbs = consumedTotals?.carbs || 0;
-  const consumedProtein = consumedTotals?.protein || 0;
-  const consumedFat = consumedTotals?.fat || 0;
-  const consumedFiber = consumedTotals?.fiber || 0;
+  // Safe string conversion
+  const safeString = (value, fallback = '') => {
+    if (value === null || value === undefined) return fallback;
+    return String(value);
+  };
 
-  
+  const goalCalories = safeNumber(plan?.calories);
+  const goalCarbs = safeNumber(plan?.carbs);
+  const goalProtein = safeNumber(plan?.protein);
+  const goalFat = safeNumber(plan?.fat);
+  const goalFiber = safeNumber(plan?.fiber?.recommended);
+
+  const consumedCals = safeNumber(consumedTotals?.calories);
+  const consumedCarbs = safeNumber(consumedTotals?.carbs);
+  const consumedProtein = safeNumber(consumedTotals?.protein);
+  const consumedFat = safeNumber(consumedTotals?.fat);
+  const consumedFiber = safeNumber(consumedTotals?.fiber);
+
   const remainingCalories = Math.max(0, goalCalories - consumedCals);
   const calorieProgress = goalCalories > 0 ? Math.min(consumedCals / goalCalories, 1) : 0;
 
-  
   const progressBar = (consumed, goal) => {
-    const numericGoal = Number(goal) || 0;
-    const numericConsumed = Number(consumed) || 0;
+    const numericGoal = safeNumber(goal);
+    const numericConsumed = safeNumber(consumed);
     if (numericGoal <= 0) return 0;
     return Math.min(numericConsumed / numericGoal, 1); 
   };
 
+  // Debug log all values
+  console.log('Debug values:', {
+    userGoalText,
+    goalCalories,
+    consumedCals,
+    remainingCalories,
+    streak,
+    meals
+  });
 
   if (isLoading && uid) { 
     return (
       <View style={styles.mainContainer}>
-        <Header subtitle={"Welcome Back !"} />        
+        <Header subtitle="Welcome Back !" />        
         <TabNavigation />
         <View style={[styles.container, {flex: 1, justifyContent: 'center', alignItems: 'center'}]}>
           <ActivityIndicator size="large" color="#2E4A32" />
-           <Text style={{marginTop: 10, color: '#555'}}>Loading dashboard...</Text>
+          <Text style={{marginTop: 10, color: '#555'}}>Loading dashboard...</Text>
         </View>
       </View>
     );
   }
 
-  
   if (!uid) {
     return (
       <View style={styles.mainContainer}>
-        <Header subtitle={"Welcome Back !"} />
+        <Header subtitle="Welcome Back !" />
         <TabNavigation />
         <View style={[styles.container, {flex: 1, justifyContent: 'center', alignItems: 'center'}]}>
-          <Text style={styles.centeredMessageText || {fontSize: 18, textAlign: 'center'}}>Please log in to view your dashboard.</Text>
+          <Text style={{fontSize: 18, textAlign: 'center'}}>
+            Please log in to view your dashboard.
+          </Text>
         </View>
       </View>
     );
   }
 
-
   return (
     <View style={styles.mainContainer}>
-      <Header subtitle={"Welcome Back !"} />
+      <Header subtitle="Welcome Back !" />
       <TabNavigation />
       
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
         <View style={styles.container}>
           <View style={styles.chartContainer}>
-            <View style={{ position: 'absolute', top: 0, right: 0, backgroundColor: '#88A76C', borderBottomLeftRadius: 20, borderTopRightRadius: 20, height: 40, width: 140, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={styles.chartText}>{userGoalText || 'Set Goal'}</Text>
+            <View style={{ 
+              position: 'absolute', 
+              top: 0, 
+              right: 0, 
+              backgroundColor: '#88A76C', 
+              borderBottomLeftRadius: 20, 
+              borderTopRightRadius: 20, 
+              height: 40, 
+              width: 140, 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <Text style={styles.chartText}>
+                {safeString(userGoalText, 'Set Goal')}
+              </Text>
             </View>
-            <Text style={styles.caloriesText}>Today's goal </Text>
+            
+            <Text style={styles.caloriesText}>Today's goal</Text>
             <Text style={styles.caloriesSubText}>Remaining = Goal - Food Calories Consumed</Text>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -188,7 +213,7 @@ export default function Home() {
                   height={150}
                   strokeWidth={9}
                   radius={55}
-                  chartConfig={ styles.chartConfig || { 
+                  chartConfig={{ 
                     backgroundColor: '#FCCF94',
                     backgroundGradientFrom: '#FCCF94',
                     backgroundGradientTo: '#FCCF94',
@@ -198,33 +223,50 @@ export default function Home() {
                   hideLegend={true}
                 />
 
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  right: 0, 
+                  bottom: 0, 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}>
                   <Text style={styles.goalText}>Remaining</Text>
-                  <Text style={styles.remainingValue}>{remainingCalories.toFixed(0)}</Text> {/* UPDATE: Use calculated remaining */}
-             
+                  <Text style={styles.remainingValue}>
+                    {safeFormatValue(remainingCalories, 0)}
+                  </Text>
                 </View>
               </View>
+              
               <View style={{ flexDirection: 'column', justifyContent: 'space-around', height: 150 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Image source={require('../assets/Images/BaseGoal.png')} />
                   <View style={{ marginLeft: 8 }}>
                     <Text style={styles.remaining}>Base Goal</Text>
-                    <Text style={styles.remainingValue}>{goalCalories.toFixed(0)} kcal</Text>
+                    <Text style={styles.remainingValue}>
+                      {`${safeFormatValue(goalCalories, 0)} kcal`}
+                    </Text>
                   </View>
                 </View>
+                
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Image source={require('../assets/Images/Food.png')} />
                   <View style={{ marginLeft: 8 }}>
                     <Text style={styles.remaining}>Consumed</Text>
-                    <Text style={styles.remainingValue}>{consumedCals.toFixed(0)}</Text> 
+                    <Text style={styles.remainingValue}>
+                      {safeFormatValue(consumedCals, 0)}
+                    </Text> 
                   </View>
                 </View>
-                {/* Streak */}
+                
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Image source={require('../assets/Images/Streak.png')} />
                   <View style={{ marginLeft: 8 }}>
                     <Text style={styles.remaining}>Streak</Text>
-                    <Text style={styles.remainingValue}>{streak} {streak === 1 ? 'day' : 'days'}</Text>
+                    <Text style={styles.remainingValue}>
+                      {`${safeNumber(streak, 0)} ${safeNumber(streak, 0) === 1 ? 'day' : 'days'}`}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -232,113 +274,105 @@ export default function Home() {
 
             <Divider style={styles.Divider} />
 
-         
             <View style={{ flexDirection: 'column', width: '100%', marginTop: 15 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 10 }}>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Text style={styles.remaining}>Carbs</Text>
+                </View>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Text style={styles.remaining}>Protein</Text>
+                </View>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Text style={styles.remaining}>Fat</Text>
+                </View>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Text style={styles.remaining}>Fiber</Text>
+                </View>
+              </View>
 
-<View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 10 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 10 }}>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Bar
+                    progress={progressBar(consumedCarbs, goalCarbs)}  
+                    width={70}
+                    height={10}
+                    color="#D48A73"
+                    borderWidth={0}
+                    unfilledColor="white"
+                  />
+                  <Text style={{ marginTop: 10 }}>
+                    {`${safeFormatValue(consumedCarbs, 0)} / ${safeFormatValue(goalCarbs, 0)}g`}
+                  </Text>
+                </View>
 
-  <View style={{ alignItems: 'center', flex: 1 }}>
-    <Text style={styles.remaining}>Carbs</Text>
-  </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Bar
+                    progress={progressBar(consumedProtein, goalProtein)} 
+                    width={70}
+                    height={10}
+                    color="#D48A73"
+                    borderWidth={0}
+                    unfilledColor="white"
+                  />
+                  <Text style={{ marginTop: 10 }}>
+                    {`${safeFormatValue(consumedProtein, 0)} / ${safeFormatValue(goalProtein, 0)}g`}
+                  </Text>
+                </View>
 
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Bar
+                    progress={progressBar(consumedFat, goalFat)}
+                    width={70}
+                    height={10}
+                    color="#D48A73"
+                    borderWidth={0}
+                    unfilledColor="white"
+                  />
+                  <Text style={{ marginTop: 10 }}>
+                    {`${safeFormatValue(consumedFat, 0)} / ${safeFormatValue(goalFat, 0)}g`}
+                  </Text>
+                </View>
 
-  <View style={{ alignItems: 'center', flex: 1 }}>
-    <Text style={styles.remaining}>Protein</Text>
-  </View>
-
-
-  <View style={{ alignItems: 'center', flex: 1 }}>
-    <Text style={styles.remaining}>Fat</Text>
-  </View>
-
-  <View style={{ alignItems: 'center', flex: 1 }}>
-    <Text style={styles.remaining}>Fiber</Text>
-  </View>
-</View>
-
-
-<View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 10 }}>
-
-  <View style={{ flex: 1, alignItems: 'center' }}>
-    <Bar
-      progress={progressBar(consumedCarbs, goalCarbs)}  
-      width={70}
-      height={10}
-      color={'#D48A73'}
-      borderWidth={0}
-      unfilledColor={'white'}
-    />
-    <Text style={{ marginTop: 10 }}>{`${consumedCarbs.toFixed(0)} / ${goalCarbs}g`}</Text>
-  </View>
-
-
-  <View style={{ flex: 1, alignItems: 'center' }}>
-    <Bar
-      progress={progressBar(consumedProtein, goalProtein)} 
-      width={70}
-      height={10}
-      color={'#D48A73'}
-      borderWidth={0}
-      unfilledColor={'white'}
-    />
-    <Text style={{ marginTop: 10 }}>{`${consumedProtein.toFixed(0)} / ${goalProtein}g`}</Text>
-  </View>
-
-  
-  <View style={{ flex: 1, alignItems: 'center' }}>
-    <Bar
-      progress={progressBar(consumedFat, goalFat)}
-      width={70}
-      height={10}
-      color={'#D48A73'}
-      borderWidth={0}
-      unfilledColor={'white'}
-    />
-    <Text style={{ marginTop: 10 }}>{`${consumedFat.toFixed(0)} / ${goalFat}g`}</Text>
-  </View>
-
-  
-  <View style={{ flex: 1, alignItems: 'center' }}>
-    <Bar
-      progress={progressBar(consumedFiber, goalFiber)}  // Ensure valid progress calculation
-      width={70}
-      height={10}
-      color={'#D48A73'}
-      borderWidth={0}
-      unfilledColor={'white'}
-    />
-    <Text style={{ marginTop: 10 }}>{`${consumedFiber.toFixed(1)} / ${goalFiber}g`}</Text>
-  </View>
-</View>
-</View>
-
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Bar
+                    progress={progressBar(consumedFiber, goalFiber)}
+                    width={70}
+                    height={10}
+                    color="#D48A73"
+                    borderWidth={0}
+                    unfilledColor="white"
+                  />
+                  <Text style={{ marginTop: 10 }}>
+                    {`${safeFormatValue(consumedFiber, 1)} / ${safeFormatValue(goalFiber, 0)}g`}
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
+          
           <Image source={require('../assets/Images/SportyPear.png')} style={styles.sportyPear} />
+          
           <View style={styles.buttonHomeContainer}>
-        
-            <TouchableOpacity style={[styles.homeButton, { backgroundColor: '#88A76C' }]} onPress={() => navigation.navigate('PlanTemplate')}>
+            <TouchableOpacity 
+              style={[styles.homeButton, { backgroundColor: '#88A76C' }]} 
+              onPress={() => navigation.navigate('PlanTemplate')}
+            >
               <Text style={[styles.buttonHomeText, { color: 'white' }]}>My Nutrition Plan</Text>
             </TouchableOpacity>
            
             {meals.map((meal, index) => (
               <TouchableOpacity
-           
                 onPress={() => navigation.navigate('AddMeal', { mealType: meal })}
                 key={index}
                 style={[styles.homeButton, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
               >
-                <Text style={styles.buttonHomeText}>{meal}</Text>
+                <Text style={styles.buttonHomeText}>{safeString(meal, '')}</Text>
                 <Ionicons name="add-circle-outline" size={24} color="black" style={styles.addIcon} />
               </TouchableOpacity>
             ))}
           </View>
-
-          
-         
-
         </View>
       </ScrollView>
     </View>
   );
 }
-

@@ -1269,7 +1269,24 @@ removeFileButton: {
         fontSize: 12,
         fontFamily: 'Quicksand_500Medium', // Ensure font is loaded
         color: '#555555',
-    }
+    },
+    // Add these to your existing styles:
+bottomRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginTop: 8, // Add some spacing between top and bottom rows
+},
+backButton: {
+  padding: 4,
+  minWidth: 32, // Ensures consistent spacing
+  alignItems: 'center',
+},
+rightIconButton: {
+  padding: 4,
+  minWidth: 32, // Same as backButton to maintain balance
+  alignItems: 'center',
+},
 
 
 });

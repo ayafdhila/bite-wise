@@ -19,7 +19,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native"; 
+} from "react-native";
+import Header from "../Header"; // Import your Header component
 
 // Extended FoodItem type for editing state
 /**
@@ -121,7 +122,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       const resultToSave: FoodAnalysisResult = {
         ...editedResult,
         foods: editedResult.foods.map(
-          ({ portionTemplate, gramValueStr, ...foodItem }) => foodItem
+          ({ portionTemplate, gramValueStr, unit, isManuallyAdded, ...foodItem }) => foodItem
         ),
       };
       onEdit(resultToSave);
@@ -131,6 +132,15 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
     const handleCancelEdits = () => {
       setEditedResult(processResultForEditing(result)); // Reset to original processed result
       setIsEditing(false);
+    };
+
+    // Handle the edit icon press
+    const handleEditIconPress = () => {
+      if (isEditing) {
+        handleSaveEdits();
+      } else {
+        handleStartEditing();
+      }
     };
 
     // This function is called when the gram input changes
@@ -233,6 +243,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       },
       [result]
     );
+
     const updateFoodItemName = useCallback((index: number, newName: string) => {
       setEditedResult((prev) => {
         if (!prev) return prev;
@@ -284,7 +295,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
           splitPortionForEditing(initialPortion);
 
         const newFoodItem: EditableFoodItem = {
-          // foodId: `manual-${Date.now()}`, // Removed: Not part of EditableFoodItem
           name: "New Food Item",
           ingredients: [], // Add empty ingredients array
           estimatedPortion: initialPortion,
@@ -295,7 +305,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
           gramValueStr: gramValue,
           unit: unit,
           isManuallyAdded: true, // Mark as manually added
-          // Consider adding an 'isManuallyAdded: true' flag if further differentiation is needed
         };
 
         const updatedFoods = [...prev.foods, newFoodItem];
@@ -360,7 +369,15 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       // Handle case where result might be null or undefined initially
       return (
         <View style={styles.container}>
-          <Text>Loading nutrition data...</Text>
+          {/* Replace the unified header with your Header component */}
+          <Header 
+            showBackButton={true} 
+            onBackPress={onRetake}
+            subtitle="Nutrition Analysis" 
+          />
+          <View style={styles.centered}>
+            <Text>Loading nutrition data...</Text>
+          </View>
         </View>
       );
     }
@@ -438,47 +455,14 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
 
     return (
       <View style={styles.container}>
-        {/* Unified Header */}
-        <View style={styles.unifiedHeader}>
-          <View style={styles.headerTopRow}>
-            <Image
-              source={require("../../assets/Images/logo.png")} 
-              style={styles.headerLogo}
-            />
-            <Text style={styles.headerAppName}>Bite wise</Text>
-            <View style={styles.headerIconsContainer}>
-              <TouchableOpacity>
-                <Ionicons
-                  name="notifications-outline"
-                  size={28}
-                  color="#333333"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity style={{ marginLeft: 15 }}>
-                <Ionicons name="settings-outline" size={28} color="#333333" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.headerBottomRow}>
-            <TouchableOpacity
-              style={styles.headerBackAction}
-              onPress={onRetake}
-            >
-              <Ionicons name="arrow-back" size={28} color="#333333" />
-            </TouchableOpacity>
-            <Text style={styles.headerSubtitle}>Nutrition Analysis</Text>
-            <TouchableOpacity
-              style={styles.headerActionIcon} 
-              onPress={isEditing ? handleSaveEdits : handleStartEditing}
-            >
-              <Ionicons
-                name={isEditing ? "checkmark-sharp" : "pencil-sharp"}
-                size={28}
-                color="#333333"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Replace the unified header with your Header component */}
+        <Header 
+          showBackButton={true} 
+          onBackPress={onRetake}
+          subtitle={isEditing ? "Edit Analysis" : "Nutrition Analysis"}
+          rightIcon={isEditing ? "checkmark-outline" : "create-outline"}
+          onRightIconPress={handleEditIconPress}
+        />
 
         {imageDataUri && (
           <View style={styles.imageDisplayContainer}>
@@ -929,6 +913,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
               </TouchableOpacity>
             )}
           </View>
+
           {/* Nutrition Facts */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Total Nutrition per Serving</Text>
@@ -947,7 +932,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                 grams={displayResult.nutritionPerServing.fat}
                 caloriesFromMacro={displayResult.nutritionPerServing.fat * 9}
                 totalCalories={displayResult.nutritionPerServing.calories}
-                color="#FF6384" // Fat color
+                color="#D48A73" // Fat color
               />
               <MacroNutrientVisualizer
                 label="Protein"
@@ -956,14 +941,14 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                   displayResult.nutritionPerServing.protein * 4
                 }
                 totalCalories={displayResult.nutritionPerServing.calories}
-                color="#36A2EB" // Protein color
+                color="#D48A73" // Protein color
               />
               <MacroNutrientVisualizer
                 label="Carbs"
                 grams={displayResult.nutritionPerServing.carbs}
                 caloriesFromMacro={displayResult.nutritionPerServing.carbs * 4}
                 totalCalories={displayResult.nutritionPerServing.calories}
-                color="#FFCE56" // Carbs color
+                color="#D48A73" // Carbs color
               />
 
               {/* Other Nutrients (unchanged rendering) */}
@@ -985,6 +970,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
               )}
             </View>
           </View>
+
           {/* Notes */}
           {displayResult.notes && (
             <View style={styles.section}>
@@ -1014,7 +1000,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
           ) : (
             <TouchableOpacity style={styles.addButton} onPress={onSave}>
               <Ionicons name="add" size={20} color="#FCCF94" />
-              <Text style={styles.addButtonText}>Add </Text>
+              <Text style={styles.addButtonText}>Add to Log</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1028,65 +1014,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F4E4C3", 
   },
-  // Unified Header Styles 
-  unifiedHeader: {
-    backgroundColor: "#88A76C", 
-    paddingTop: 30, 
-    paddingBottom: 10,
-    paddingHorizontal: 15,
-    // borderBottomLeftRadius: 20,
-    // borderBottomRightRadius: 20,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  headerTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10, 
-  },
-  headerLogo: {
-    width: 60, 
-    height: 60, 
-    resizeMode: "contain",
-  },
-  headerAppName: {
-    fontSize: 40, 
-    fontWeight: "bold",
-    color: "#000", 
-    fontFamily: "System", 
-  },
-  headerIconsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerBottomRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between", 
-  },
-  headerBackAction: {
-    // Container for back arrow and potentially text
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerSubtitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000", 
-    textAlign: "center",
+  centered: {
     flex: 1,
-    marginLeft: 10, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  headerActionIcon: {
-    // Style for icons on the right in the bottom row (like edit/save)
-    padding: 5, 
-  },
-  // End of Unified Header Styles
-
   imageDisplayContainer: {
     alignItems: "center",
     marginVertical: 10,
@@ -1114,8 +1047,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   confidenceSectionCard: {
-    backgroundColor: "#FCCF94", // Lemon Chiffon (light yellow/orange)
-    borderRadius: 10,
+    backgroundColor: "#FCCF94",
+    borderRadius: 20,
     padding: 15,
     marginBottom: 20,
     shadowColor: "#000",
@@ -1126,7 +1059,7 @@ const styles = StyleSheet.create({
   },
   confidenceSectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
     marginBottom: 10,
   },
@@ -1140,7 +1073,8 @@ const styles = StyleSheet.create({
   },
   confidenceItemLabel: {
     fontSize: 15,
-    color: "#2E4A31", //
+    fontFamily: 'Quicksand_600SemiBold',
+    color: "#2E4A31",
     flex: 1,
   },
   confidenceBarContainer: {
@@ -1157,12 +1091,13 @@ const styles = StyleSheet.create({
   },
   confidenceItemValue: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: 'Quicksand_700Bold',
     minWidth: 40,
     textAlign: "right",
   },
   imageQualityDetailText: {
     fontSize: 13,
+    fontFamily: 'Quicksand_500Medium',
     color: "#2E4A31", 
     textAlign: "center",
     marginBottom: 10,
@@ -1186,11 +1121,12 @@ const styles = StyleSheet.create({
   metricPillText: {
     marginLeft: 5,
     fontSize: 12,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#2E4A31", 
   },
   section: {
     backgroundColor: "#FCCF94", 
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 15,
     marginBottom: 20,
     shadowColor: "#000",
@@ -1201,14 +1137,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
     marginBottom: 12,
   },
   
   foodItem: {
     backgroundColor: "#FFFACD", 
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 12,
     marginBottom: 15,
     shadowColor: "#000",
@@ -1224,22 +1160,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   foodInputName: {
-    
     flex: 1,
     backgroundColor: "#FFFAF0", 
     borderWidth: 1,
     borderColor: "#BDB76B", 
-    borderRadius: 6,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 16,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#2E4A31", 
     marginRight: 10, 
-    fontWeight: "500",
   },
   foodName: {
     fontSize: 17,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
     flex: 1, 
   },
@@ -1255,7 +1190,7 @@ const styles = StyleSheet.create({
   foodItemConfidenceText: {
     marginLeft: 4,
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: 'Quicksand_700Bold',
   },
   deleteItemButton: {
     padding: 5,
@@ -1268,10 +1203,10 @@ const styles = StyleSheet.create({
   },
   portionDescriptionText: {
     fontSize: 14,
+    fontFamily: 'Quicksand_500Medium',
     color: "#2E4A31", 
   },
   foodInputGrams: {
-    
     backgroundColor: "#FFFAF0", 
     borderWidth: 1,
     borderColor: "#BDB76B", 
@@ -1279,6 +1214,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     fontSize: 14,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#2E4A31", 
     marginHorizontal: 5,
     minWidth: 50,
@@ -1292,28 +1228,31 @@ const styles = StyleSheet.create({
   },
   manualNutritionLabel: {
     fontSize: 14,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#2E4A31", 
     marginBottom: 3,
   },
   manualNutritionInput: {
-    
     backgroundColor: "#FFFAF0", 
     borderWidth: 1,
     borderColor: "#BDB76B", 
-    borderRadius: 6,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 14,
+    fontFamily: 'Quicksand_500Medium',
     color: "#2E4A31", 
     flex: 0.5, 
   },
   foodPortion: {
     fontSize: 14,
+    fontFamily: 'Quicksand_500Medium',
     color: "#2E4A31", 
     marginTop: 4,
   },
   foodItemNutritionText: {
     fontSize: 13,
+    fontFamily: 'Quicksand_500Medium',
     color: "#2E4A31", 
     marginTop: 4,
     fontStyle: "italic",
@@ -1325,14 +1264,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginTop: 10,
     backgroundColor: "#F0FFF0", 
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#6B8E23", 
   },
   addIngredientButtonText: {
     marginLeft: 8,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
   },
   nutritionContainer: {
@@ -1347,11 +1286,12 @@ const styles = StyleSheet.create({
   },
   totalCaloriesLabel: {
     fontSize: 16,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#2E4A31", 
   },
   totalCaloriesValue: {
     fontSize: 32,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
     marginTop: 5,
   },
@@ -1368,11 +1308,12 @@ const styles = StyleSheet.create({
   },
   macroNutrientLabel: {
     fontSize: 14,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#2E4A31", 
   },
   macroNutrientGrams: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
   },
   macroProgressBarContainer: {
@@ -1388,7 +1329,7 @@ const styles = StyleSheet.create({
   },
   macroNutrientPercent: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
     marginLeft: 10,
     width: 35,
@@ -1409,6 +1350,7 @@ const styles = StyleSheet.create({
   },
   nutritionLabel: {
     fontSize: 15,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#2E4A31", 
   },
   nutritionValueContainer: {
@@ -1417,16 +1359,18 @@ const styles = StyleSheet.create({
   },
   nutritionValue: {
     fontSize: 15,
-    fontWeight: "500",
+    fontFamily: 'Quicksand_700Bold',
     color: "#2E4A31", 
   },
   nutritionUnit: {
     fontSize: 13,
+    fontFamily: 'Quicksand_500Medium',
     color: "#2E4A31", 
     marginLeft: 3,
   },
   notes: {
     fontSize: 15,
+    fontFamily: 'Quicksand_500Medium',
     color: "#2E4A31", 
     lineHeight: 22,
     fontStyle: "italic",
@@ -1457,9 +1401,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   addButtonText: {
-    color: "#FCCF94", //
+    color: "#FCCF94",
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
     marginLeft: 10,
   },
   saveButton: {
@@ -1478,7 +1422,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "#FCCF94",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
   },
   cancelButton: {
     backgroundColor: "#FCCF94", 
@@ -1493,84 +1437,9 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "#2E4A31", 
     fontSize: 16,
-    fontWeight: "bold",
-  },
-  editingFoodItemCard: {
-    backgroundColor: "#FFFACD", 
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#6B8E23", 
-  },
-  inputLabel: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#2E4A31", 
-    marginBottom: 3,
-    marginTop: 8,
-  },
-  textInput: {
-    
-    backgroundColor: "#FFFAF0", 
-    borderWidth: 1,
-    borderColor: "#BDB76B", 
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 15,
-    color: "#2E4A31", 
-    marginBottom: 8,
-  },
-  portionInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  portionValueInput: {
-    
-    flex: 1,
-    marginRight: 8,
-    backgroundColor: "#FFFAF0",
-    borderWidth: 1,
-    borderColor: "#BDB76B",
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 15,
-    color: "#2E4A31",
-  },
-  portionUnitText: {
-    fontSize: 15,
-    color: "#2E4A31", 
-  },
-  deleteIconContainer: {
-    padding: 8,
-  },
-  nutritionInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 5,
-  },
-  nutritionInputLabel: {
-    fontSize: 15,
-    color: "#2E4A31", 
-    flex: 0.4,
-  },
-  nutritionInputField: {
-    
-    flex: 0.6,
-    backgroundColor: "#FFFAF0",
-    borderWidth: 1,
-    borderColor: "#BDB76B",
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 15,
-    color: "#2E4A31",
+    fontFamily: 'Quicksand_700Bold',
   },
   manualNutritionInputRow: {
-    
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between", 

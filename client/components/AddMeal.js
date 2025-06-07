@@ -1,57 +1,73 @@
 // components/AddMeal.js
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import {
-    View, Text, Button, StyleSheet, ActivityIndicator, Alert, Linking,
-    TouchableOpacity, Image, Platform, FlatList, RefreshControl
+    View,
+    Text,
+    Button,
+    StyleSheet,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    TouchableOpacity,
+    Image,
+    Platform,
+    FlatList,
+    RefreshControl
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import { CameraView as ExpoCameraView, useCameraPermissions, PermissionStatus } from 'expo-camera'; // Renamed to avoid conflict if you have another CameraView
+import { CameraView, useCameraPermissions, PermissionStatus } from 'expo-camera';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { AuthContext } from '../components/AuthContext';
+import Header from '../components/Header';
+import TabNavigation from '../components/TabNavigation';
+import Card from './Card';
+// Import FoodSnap components
+import { FoodSnapFlow } from '../components/FoodSnap/FoodSnapFlow';
 
-// Contexts and Components
-import { AuthContext } from './AuthContext';
-import { GamificationContext } from './GamificationContext';
-import Header from './Header';
-import TabNavigation from './TabNavigation';
-import Card from './Card'; // Assuming Card.js is in ./components/
+// Safety functions
+const safeNumber = (value, fallback = 0) => {
+    const num = Number(value);
+    return isNaN(num) ? fallback : num;
+};
 
-// Import the TypeScript FoodSnapFlow component
-import { FoodSnapFlow } from './FoodSnap/FoodSnapFlow'; // Path from components/AddMeal.js to components/FoodSnap/
+const safeString = (value, fallback = '') => {
+    if (value === null || value === undefined) return fallback;
+    return String(value);
+};
 
-// API Configuration
+// --- API Config ---
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-const PRODUCT_API_ENDPOINT = "/api/food/"; // For barcode scanning
+const PRODUCT_API_ENDPOINT = "/api/food/";
 
-if (!API_BASE_URL) { console.error("FATAL: API_BASE_URL not defined in AddMeal.js"); }
+if (!API_BASE_URL) { 
+    console.error("FATAL: API_BASE_URL not defined in AddMeal.js"); 
+}
 
-const PALETTE = {
-    darkGreen: '#2E4A32', mediumGreen: '#88A76C', lightOrange: '#FCCF94',
-    lightCream: '#F5E4C3', white: '#FFFFFF', black: '#000000',
-    grey: '#A0A0A0', darkGrey: '#555555', errorRed: '#D32F2F', // Added errorRed
+const PALETTE = { 
+    darkGreen: '#2E4A32',
+    mediumGreen: '#88A76C',
+    lightOrange: '#FCCF94',
+    lightCream: '#F5E4C3',
+    white: '#FFFFFF',
+    black: '#000000',
+    grey: '#A0A0A0',
+    darkGrey: '#555555',
 };
 
 const AddMeal = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const mealType = route.params?.mealType;
-
     const { user, loading: authLoading, getIdToken } = useContext(AuthContext);
-    const { unlockAchievement } = useContext(GamificationContext);
 
-    // --- UI Control State ---
-    const [activeSegment, setActiveSegment] = useState('Analyze'); // 'Analyze', 'Saved'
-    const [displayMode, setDisplayMode] = useState('options'); // 'options', 'barcodeCamera' for barcode scanner UI
-
-    // --- FoodSnapFlow State ---
-    const [isFoodSnapFlowVisible, setIsFoodSnapFlowVisible] = useState(false);
-    const [isLoggingFoodSnapMeal, setIsLoggingFoodSnapMeal] = useState(false);
-
-    // --- Barcode Scanner State ---
+    // State
+    const [activeSegment, setActiveSegment] = useState('Analyze');
+    const [displayMode, setDisplayMode] = useState('options'); // 'options', 'barcode', 'foodSnap'
     const [scannedData, setScannedData] = useState(null);
-    const [isLoadingBarcodeProduct, setIsLoadingBarcodeProduct] = useState(false); // Specific loader for barcode product fetch
-    const [barcodePermission, requestBarcodePermission] = useCameraPermissions();
+    const [isLoading, setIsLoading] = useState(false);
+    const [permission, requestPermission] = useCameraPermissions();
+    const [foodSnapMode, setFoodSnapMode] = useState(null); // 'camera' or 'gallery'
 
-    // --- Saved Recipes State ---
     const [savedRecipes, setSavedRecipes] = useState([]);
     const [isSavedLoading, setIsSavedLoading] = useState(false);
     const [savedError, setSavedError] = useState(null);
@@ -61,311 +77,413 @@ const AddMeal = () => {
         console.log("[AddMeal] Auth User State:", user ? user.uid : 'null', "Auth Loading:", authLoading);
     }, [user, authLoading]);
 
-    // --- Saved Recipes Logic ---
     const fetchSavedRecipes = useCallback(async (isRefresh = false) => {
         if (!user?.uid) {
-            setSavedRecipes([]); if (!isRefresh) setIsSavedLoading(false); setIsSavedRefreshing(false); return;
+            console.log("AddMeal/Saved: No user, cannot fetch saved recipes.");
+            setSavedRecipes([]);
+            if (!isRefresh) setIsSavedLoading(false);
+            setIsSavedRefreshing(false);
+            return;
         }
         if (!isRefresh) setIsSavedLoading(true);
         setSavedError(null);
+        console.log("AddMeal/Saved: Fetching saved recipes...");
+
         try {
             const token = await getIdToken();
-            if (!token) throw new Error("Auth token missing for saved recipes.");
-            const response = await fetch(`${API_BASE_URL}/recipes/saved`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!token) throw new Error("Authentication token is missing for saved recipes.");
+
+            const response = await fetch(`${API_BASE_URL}/recipes/saved`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                throw new Error(`Unexpected server response (Saved). Status: ${response.status}. Body: ${text.substring(0, 100)}...`);
+            }
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Failed to fetch saved recipes");
+            if (!response.ok) {
+                throw new Error(data.error || data.message || "Failed to fetch saved recipes");
+            }
+            console.log(`AddMeal/Saved: Received ${data.savedRecipes?.length || 0} saved recipes.`);
             setSavedRecipes(data.savedRecipes || []);
-        } catch (err) { setSavedError(err.message); setSavedRecipes([]); }
-        finally { setIsSavedLoading(false); setIsSavedRefreshing(false); }
+        } catch (err) {
+            console.error("AddMeal/Saved: Fetch error:", err);
+            setSavedError(err.message || "Could not load your saved recipes.");
+            setSavedRecipes([]);
+        } finally {
+            setIsSavedLoading(false);
+            setIsSavedRefreshing(false);
+        }
     }, [user, getIdToken]);
 
-    useFocusEffect(useCallback(() => {
-        if (activeSegment === 'Saved' && user?.uid) fetchSavedRecipes();
-    }, [activeSegment, user, fetchSavedRecipes]));
+    useFocusEffect(
+        useCallback(() => {
+            if (activeSegment === 'Saved' && user?.uid) {
+                console.log("AddMeal: 'Saved' segment focused, fetching saved recipes.");
+                fetchSavedRecipes();
+            }
+        }, [activeSegment, user, fetchSavedRecipes])
+    );
 
     const onSavedRefresh = useCallback(() => {
-        setIsSavedRefreshing(true); fetchSavedRecipes(true);
+        setIsSavedRefreshing(true);
+        fetchSavedRecipes(true);
     }, [fetchSavedRecipes]);
 
-    // --- Barcode Scanning Logic ---
+    // Backend Fetch Function for barcode
     const fetchProductInfoFromBackend = useCallback(async (barcode) => {
-        if (!API_BASE_URL) { Alert.alert("Config Error", "Cannot connect."); return null; }
-        console.log(`Fetching barcode: ${barcode} from ${API_BASE_URL}${PRODUCT_API_ENDPOINT}${barcode}`);
-        setIsLoadingBarcodeProduct(true);
+        if (!API_BASE_URL) {
+            Alert.alert("Configuration Error", "Cannot connect to server.");
+            return null;
+        }
+        console.log(`Fetching info for barcode: ${barcode}`);
+        const targetUrl = `${API_BASE_URL}${PRODUCT_API_ENDPOINT}${barcode}`;
+        console.log("Attempting to fetch URL:", targetUrl);
+        setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}${PRODUCT_API_ENDPOINT}${barcode}`);
+            const response = await fetch(targetUrl);
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ found: false, error: `Server error: ${response.status}` }));
-                Alert.alert("Product Not Found", errorData.error || "This product isn't in our database yet, or the barcode is incorrect.");
+                console.error(`HTTP ${response.status}: ${response.statusText}`);
+                Alert.alert("Server Error", `Server returned ${response.status}. Please try again.`);
                 return null;
             }
             const data = await response.json();
             if (data.found === false) {
-                Alert.alert("Product Not Found", "This product isn't in our database yet.");
+                console.log("Product not found in database");
+                Alert.alert("Product Not Found", "This product is not in our database yet. Please try another product.");
                 return null;
             }
+            console.log("Product found, preparing navigation...");
+            setIsLoading(false);
             return { ...data, barcode: barcode };
         } catch (error) {
-            Alert.alert("Network Error", "Could not connect or read server response for barcode.");
+            console.error(`[${barcode}] Network/parsing error:`, error);
+            Alert.alert("Network Error", "Could not connect or read server response.");
+            setIsLoading(false);
             return null;
-        } finally {
-            setIsLoadingBarcodeProduct(false);
         }
     }, [API_BASE_URL]);
 
+    // Barcode Scan Handler
     const handleBarCodeScanned = useCallback(async ({ type, data }) => {
-        if (isLoadingBarcodeProduct || !data || data.trim() === "") return;
+        if (isLoading || !data || data.trim() === "") return;
         console.log(`Barcode scanned: Type: ${type}, Data: ${data}`);
-        setScannedData(data); // Show scanned data briefly
+        setScannedData(data);
         const productInfo = await fetchProductInfoFromBackend(data);
         if (productInfo) {
+            console.log("Navigating to ProductResultScreen...");
             navigation.navigate('ProductResultScreen', { productData: productInfo, mealType: mealType });
-            setDisplayMode('options'); // Reset to options view after navigating
-            setScannedData(null); // Clear scanned data
+            setDisplayMode('options');
+            setScannedData(null);
         } else {
-            // Error/not found alerts handled in fetchProductInfoFromBackend
-            // Allow rescan by not immediately clearing displayMode here, or add a "Scan Again" button
-             setTimeout(() => setScannedData(null), 2000); // Clear scanned data after a bit
+            console.log("Product not found/error. Ready for new scan.");
         }
-    }, [isLoadingBarcodeProduct, navigation, mealType, fetchProductInfoFromBackend]);
+    }, [isLoading, navigation, mealType, fetchProductInfoFromBackend]);
 
+    // Permission and Option Handlers
     const openAppSettings = () => Linking.openSettings();
 
     const handleBarcodeOptionPress = async () => {
-        if (!barcodePermission) return; // Still loading permission object
-        let currentStatus = barcodePermission.status;
-        if (currentStatus === PermissionStatus.UNDETERMINED || (currentStatus === PermissionStatus.DENIED && barcodePermission.canAskAgain)) {
-            const { status } = await requestBarcodePermission();
+        if (!permission) return;
+        let currentStatus = permission.status;
+        if (currentStatus === PermissionStatus.UNDETERMINED || (currentStatus === PermissionStatus.DENIED && permission.canAskAgain)) {
+            const { status } = await requestPermission();
             currentStatus = status;
         }
         if (currentStatus === PermissionStatus.GRANTED) {
-            setActiveSegment('Analyze'); // Ensure analyze segment is active
-            setDisplayMode('barcodeCamera');
+            setDisplayMode('barcode');
             setScannedData(null);
         } else {
-            Alert.alert("Permission Required", "Camera access is needed for barcode scanning.",
+            Alert.alert("Permission Required", "Camera access needed for barcode scanning.",
                 [{ text: "Cancel", style: "cancel" }, { text: "Open Settings", onPress: openAppSettings }]
             );
         }
     };
 
-    // --- FoodSnapFlow Callbacks & Logic ---
-    const handleLaunchFoodSnapFlow = () => {
-        setActiveSegment('Analyze'); // Ensure analyze segment is active
-        setDisplayMode('options'); // Go back to options before launching full flow
-        setIsFoodSnapFlowVisible(true);
+    // Direct FoodSnap integration handlers
+    const handleImportOptionPress = () => {
+        setFoodSnapMode('gallery');
+        setDisplayMode('foodSnap');
     };
 
-    const handleMealLoggedFromSnap = useCallback(async (analysisResult, image) => {
-        console.log("[AddMeal] Meal Logged from FoodSnapFlow. Items:", analysisResult.foods.length);
-        setIsFoodSnapFlowVisible(false);
-        if (!user?.uid || !mealType) { Alert.alert("Error", "User or meal type missing."); return; }
+    const handleSnapOptionPress = () => {
+        setFoodSnapMode('camera');
+        setDisplayMode('foodSnap');
+    };
 
-        setIsLoggingFoodSnapMeal(true);
-        const date = new Date().toISOString().split('T')[0];
-        const mealPayload = {
-            uid: user.uid, mealType: mealType.toLowerCase(), date: date,
-            title: analysisResult.foods[0]?.name || (analysisResult.foods.length > 1 ? `${analysisResult.foods.length} food items` : 'Analyzed Meal'),
-            calories: analysisResult.nutritionPerServing?.calories ?? 0,
-            protein: analysisResult.nutritionPerServing?.protein ?? 0,
-            carbs: analysisResult.nutritionPerServing?.carbs ?? 0,
-            fat: analysisResult.nutritionPerServing?.fat ?? 0,
-            fiber: analysisResult.nutritionPerServing?.fiber ?? 0,
-            imageUrl: image.uri,
-            source: `foodsnap-vision-${analysisResult.recognitionConfidence.toFixed(2)}`,
-            analyzedDetails: {
-                foods: analysisResult.foods,
-                recognitionConfidence: analysisResult.recognitionConfidence,
-                imageQuality: analysisResult.imageQuality,
-                notes: analysisResult.notes,
-                metrics: analysisResult.confidenceMetrics,
-            }
-        };
-        try {
-            const token = await getIdToken();
-            if (!token) throw new Error("Authentication failed.");
-            const response = await fetch(`${API_BASE_URL}/logMeal/log-meal`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(mealPayload),
-            });
-            const responseBody = await response.json();
-            if (!response.ok) throw new Error(responseBody.message || "Failed to log meal via FoodSnap.");
-            Alert.alert("Success!", `${mealPayload.title} added to your ${mealType}!`);
-            if (responseBody?.isFirstMeal === true && unlockAchievement) {
-                await unlockAchievement('firstMealLogged');
-            }
-            // TODO: Streak update logic (call /logMeal/update-streak)
-        } catch (err) { Alert.alert("Logging Failed", `Could not log meal: ${err.message}`); }
-        finally { setIsLoggingFoodSnapMeal(false); }
-    }, [user, mealType, getIdToken, unlockAchievement, navigation]);
+    // FoodSnap callbacks
+    const handleFoodSnapMealLogged = (analysisResult, imageData) => {
+        console.log('Meal logged from FoodSnap:', analysisResult);
+        // Reset states
+        setDisplayMode('options');
+        setFoodSnapMode(null);
+        // Navigate to a results screen or back to home
+        navigation.navigate('Home');
+    };
 
-    const handleFlowCancelFromSnap = useCallback(() => {
-        console.log("[AddMeal] FoodSnapFlow was Cancelled.");
-        setIsFoodSnapFlowVisible(false);
-    }, []);
+    const handleFoodSnapCancel = () => {
+        setDisplayMode('options');
+        setFoodSnapMode(null);
+    };
 
-    // --- Back Navigation Handler (Maintains context for barcode vs. general) ---
+    // Back Navigation Handler
     const handleBackPress = () => {
-        if (displayMode === 'barcodeCamera') {
-            setDisplayMode('options'); // Go from barcode camera back to analyze options
+        if (displayMode === 'barcode' || displayMode === 'foodSnap') {
+            setDisplayMode('options');
             setScannedData(null);
+            setFoodSnapMode(null);
         } else {
-            navigation.goBack(); // Default go back
+            navigation.goBack();
         }
     };
 
-    // --- Render Logic ---
-    if (authLoading) return <View style={styles.centered}><ActivityIndicator size="large" color={PALETTE.darkGreen} /></View>;
-    if (!user?.uid) return <View style={styles.centered}><Text style={styles.messageText}>Please log in.</Text><Button title="Login" onPress={() => navigation.navigate('LogIn')} /></View>;
-    if (!mealType) return <View style={styles.centered}><Text style={styles.messageText}>Meal type missing.</Text><Button title="Go Back" onPress={() => navigation.goBack()} /></View>;
+    // Render Logic
+    if (authLoading) {
+        console.log("Auth state loading...");
+        return <View style={styles.centered}><ActivityIndicator size="large" color="#556B2F" /></View>;
+    }
 
-    // --- Render FoodSnapFlow if active ---
-    if (isFoodSnapFlowVisible) {
+    if (!user?.uid) {
+        console.log("User not logged in.");
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.messageText}>Please log in to add a meal.</Text>
+                <Button title="Go Back" onPress={() => navigation.goBack()} color="grey"/>
+            </View>
+        );
+    }
+
+    if (!mealType) {
+        console.log("Meal type not specified.");
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.messageText}>Meal type not specified.</Text>
+                <Button title="Go Back" onPress={() => navigation.goBack()} color="grey"/>
+            </View>
+        );
+    }
+
+    if (displayMode === 'barcode' && !permission) {
+        console.log("Camera permission status loading...");
+        return <View style={styles.centered}><ActivityIndicator size="large" color="#556B2F" /></View>;
+    }
+
+    // Render FoodSnap flow
+    if (displayMode === 'foodSnap') {
         return (
             <FoodSnapFlow
-                onMealLogged={handleMealLoggedFromSnap}
-                onFlowCancel={handleFlowCancelFromSnap}
-                userId={user?.uid}
-                theme={{ primaryColor: PALETTE.darkGreen, backgroundColor: PALETTE.lightCream, textColor: PALETTE.darkGrey }}
+                userId={user.uid}
+                initialStep={foodSnapMode === 'camera' ? 'camera' : 'initialChoice'}
+                preferredSource={foodSnapMode}
+                onMealLogged={handleFoodSnapMealLogged}
+                onFlowCancel={handleFoodSnapCancel}
+                theme={{
+                    backgroundColor: PALETTE.lightCream,
+                    textColor: PALETTE.darkGrey,
+                    primaryColor: PALETTE.darkGreen,
+                    destructiveColor: '#FF3B30'
+                }}
             />
         );
     }
 
-    // --- Render main AddMeal content ---
+    // Function to Render Content Based on Segment
     const renderSegmentContent = () => {
-        if (activeSegment === 'Analyze') {
-            if (displayMode === 'options') {
-                return (
-                    <View style={styles.optionsContentContainer}>
-                        <Image source={require('../assets/Images/potato.png')} style={styles.mascotImage} resizeMode="contain" />
-                        <TouchableOpacity style={styles.optionButton} onPress={handleLaunchFoodSnapFlow}>
-                            <Text style={styles.buttonText}>Analyze with Camera/Gallery</Text>
-                            <Ionicons name="camera-outline" size={28} color={PALETTE.darkGreen} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.optionButton} onPress={handleBarcodeOptionPress}>
-                            <Text style={styles.buttonText}>Scan Barcode</Text>
-                            <Ionicons name="barcode-outline" size={28} color={PALETTE.darkGreen} />
-                        </TouchableOpacity>
-                    </View>
-                );
-            } else if (displayMode === 'barcodeCamera') {
-                if (!barcodePermission) return <View style={styles.centered}><ActivityIndicator size="large" color={PALETTE.darkGreen} /></View>;
-                if (!barcodePermission.granted) {
+        switch (activeSegment) {
+            case 'Analyze':
+                if (displayMode === 'options') {
+                    return (
+                        <View style={styles.optionsContentContainer}>
+                            <Image source={require('../assets/Images/potato.png')} style={styles.mascotImage} resizeMode="contain" />
+                            <TouchableOpacity style={styles.optionButton} onPress={handleImportOptionPress}>
+                                <Text style={styles.buttonText}>Import from Gallery</Text>
+                                <Ionicons name="image-outline" size={28} color="black" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.optionButton} onPress={handleSnapOptionPress}>
+                                <Text style={styles.buttonText}>Snap a New photo</Text>
+                                <Ionicons name="camera-outline" size={28} color="black" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.optionButton} onPress={handleBarcodeOptionPress}>
+                                <Text style={styles.buttonText}>Barcode Scan</Text>
+                                <Ionicons name="barcode-outline" size={28} color="black" />
+                            </TouchableOpacity>
+                        </View>
+                    );
+                } else if (displayMode === 'barcode') {
+                    if (permission?.granted) {
+                        return (
+                            <View style={styles.cameraContainer}>
+                                <CameraView
+                                    style={styles.camera}
+                                    facing="back"
+                                    barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "qr", "code128", "code39"] }}
+                                    onBarcodeScanned={isLoading ? undefined : handleBarCodeScanned}
+                                />
+                                {isLoading && (
+                                    <View style={styles.loadingOverlay}>
+                                        <ActivityIndicator size="large" color="#FFFFFF" />
+                                        {scannedData && <Text style={styles.loadingText}>Code: {safeString(scannedData, '')}</Text>}
+                                        <Text style={styles.loadingText}>Looking up product...</Text>
+                                    </View>
+                                )}
+                                {!isLoading && scannedData && (
+                                    <View style={styles.scannedDataOverlay}>
+                                        <Text style={styles.scannedDataText}>Last scan: {safeString(scannedData, '')}</Text>
+                                    </View>
+                                )}
+                                <TouchableOpacity onPress={handleBackPress} style={styles.cameraBackButton}>
+                                    <Ionicons name="arrow-back-circle" size={40} color={PALETTE.white} />
+                                </TouchableOpacity>
+                            </View>
+                        );
+                    } else {
+                        return (
+                            <View style={styles.centered}>
+                                <Text style={styles.messageText}>Camera Permission Required.</Text>
+                                <Text style={[styles.messageText, styles.subMessageText]}>
+                                    {permission?.canAskAgain ? "Grant permission?" : "Enable in settings."}
+                                </Text>
+                                <View style={styles.buttonSpacer} />
+                                {permission?.canAskAgain ? (
+                                    <Button title="Grant Permission" onPress={requestPermission} />
+                                ) : (
+                                    <Button title="Open Settings" onPress={openAppSettings} />
+                                )}
+                                <View style={styles.buttonSpacer} />
+                                <Button title="Back to Options" onPress={handleBackPress} color="grey"/>
+                            </View>
+                        );
+                    }
+                }
+                break;
+            
+            case 'Saved':
+                if (isSavedLoading && !isSavedRefreshing) {
                     return (
                         <View style={styles.centered}>
-                            <Text style={styles.messageText}>Camera Permission Required for Barcode Scanning.</Text>
-                            <View style={{marginVertical: 10}} />
-                            {barcodePermission.canAskAgain ?
-                                <Button title="Grant Permission" onPress={requestBarcodePermission} color={PALETTE.darkGreen} /> :
-                                <Button title="Open Settings" onPress={openAppSettings} color={PALETTE.darkGreen} />
-                            }
-                            <View style={{marginVertical: 10}} />
-                            <Button title="Back to Options" onPress={() => setDisplayMode('options')} color={PALETTE.grey}/>
+                            <ActivityIndicator size="large" color={PALETTE.darkGreen} />
+                            <Text style={styles.loadingInfoText}>Loading Saved Recipes...</Text>
                         </View>
                     );
                 }
-                return ( // Barcode Camera View
-                    <View style={styles.cameraContainer}>
-                        <ExpoCameraView
-                            style={styles.camera}
-                            facing="back"
-                            barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "qr", "code128", "code39", "datamatrix"] }}
-                            onBarcodeScanned={isLoadingBarcodeProduct ? undefined : handleBarCodeScanned}
-                        />
-                        {isLoadingBarcodeProduct && (
-                            <View style={styles.loadingOverlay}><ActivityIndicator size="large" color={PALETTE.white} /><Text style={styles.loadingText}>Looking up {scannedData || 'product'}...</Text></View>
+                if (savedError) {
+                    return (
+                        <View style={styles.centered}>
+                            <Text style={styles.errorText}>{safeString(savedError, 'Unknown error')}</Text>
+                            <TouchableOpacity onPress={() => fetchSavedRecipes()} style={styles.retryButton}>
+                                <Text style={styles.retryButtonText}>Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    );
+                }
+                return (
+                    <FlatList
+                        data={savedRecipes}
+                        renderItem={({ item }) => (
+                            <Card
+                                title={safeString(item.title, "Untitled Recipe")}
+                                imageUrl={safeString(item.imageUrl, 'https://via.placeholder.com/150?text=No+Image')}
+                                onPress={() => navigation.navigate('RecipeDetail', {
+                                    recipeId: item.id,
+                                    title: safeString(item.title, ''),
+                                    imageUrl: safeString(item.imageUrl, ''),
+                                })}
+                            />
                         )}
-                        {!isLoadingBarcodeProduct && scannedData && (
-                            <View style={styles.scannedDataOverlay}><Text style={styles.scannedDataText}>Scanned: {scannedData}</Text></View>
-                        )}
-                        <TouchableOpacity onPress={() => setDisplayMode('options')} style={styles.cameraBackButton}>
-                            <Ionicons name="arrow-back-circle" size={40} color={PALETTE.white} />
-                        </TouchableOpacity>
-                    </View>
+                        keyExtractor={(item) => String(item.id)}
+                        contentContainerStyle={styles.savedListContainer}
+                        ListEmptyComponent={
+                            !isSavedLoading ? (
+                                <View style={styles.emptyListContainer}>
+                                    <Ionicons name="bookmark-outline" size={50} color={PALETTE.grey} />
+                                    <Text style={styles.emptyListText}>No Saved Recipes Yet</Text>
+                                    <Text style={styles.emptyListSubText}>Find recipes you like and tap the bookmark to save them here!</Text>
+                                </View>
+                            ) : null
+                        }
+                        refreshControl={
+                            <RefreshControl refreshing={isSavedRefreshing} onRefresh={onSavedRefresh} colors={[PALETTE.darkGreen]} />
+                        }
+                    />
                 );
-            }
-        } else if (activeSegment === 'Saved') {
-            // Saved Recipes List
-            if (isSavedLoading && !isSavedRefreshing) return <View style={styles.centered}><ActivityIndicator size="large" color={PALETTE.darkGreen} /><Text style={styles.loadingInfoText}>Loading Saved Recipes...</Text></View>;
-            if (savedError) return <View style={styles.centered}><Text style={styles.errorText}>{savedError}</Text><TouchableOpacity onPress={() => fetchSavedRecipes(true)} style={styles.retryButton}><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></View>;
-            return (
-                <FlatList
-                    data={savedRecipes}
-                    renderItem={({ item }) => (
-                        <Card
-                            title={item.title || "Untitled Recipe"}
-                            imageUrl={item.imageUrl}
-                            onPress={() => navigation.navigate('RecipeDetail', { recipeId: item.id, title: item.title, imageUrl: item.imageUrl, mealType: mealType })}
-                        />
-                    )}
-                    keyExtractor={(item) => String(item.id)}
-                    contentContainerStyle={styles.savedListContainer}
-                    ListEmptyComponent={<View style={styles.emptyListContainer}><Ionicons name="bookmark-outline" size={50} color={PALETTE.grey} /><Text style={styles.emptyListText}>No Saved Recipes Yet</Text></View>}
-                    refreshControl={<RefreshControl refreshing={isSavedRefreshing} onRefresh={onSavedRefresh} colors={[PALETTE.darkGreen]} />}
-                />
-            );
+            default:
+                return null;
         }
-        return null;
     };
 
+    // Main Return JSX
     return (
         <View style={styles.screenContainer}>
-            <Header showBackButton={true} onBackPress={handleBackPress} subtitle={`Add to ${mealType || 'Meal'}`} />
-            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: PALETTE.grey }}>
+            <Header showBackButton={true} onBackPress={handleBackPress} subtitle={"Add your Meal!"} />
+
+            {/* Segmented Control */}
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems:'center', elevation: 2}}>
                 <TouchableOpacity
-                    style={[styles.segmentButton, activeSegment === 'Analyze' && styles.segmentActive]}
+                    style={[{backgroundColor: '#FCCF94', flex: 1, alignItems: 'center', height: 60, justifyContent : 'center', elevation: 2}, activeSegment === 'Analyze' && styles.segmentActive]}
                     onPress={() => { setActiveSegment('Analyze'); setDisplayMode('options'); }}
                 >
-                    <Text style={[styles.segmentText, activeSegment === 'Analyze' && styles.segmentTextActive]}>New Analysis</Text>
+                    <Text style={[styles.segmentText, activeSegment === 'Analyze' && styles.segmentTextActive]}>Analyze</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.segmentButton, activeSegment === 'Saved' && styles.segmentActive]}
+                    style={[{backgroundColor: '#FCCF94', flex: 1, alignItems: 'center', height: 60, justifyContent : 'center', elevation: 2}, activeSegment === 'Saved' && styles.segmentActive]}
                     onPress={() => { setActiveSegment('Saved'); setDisplayMode('options'); }}
                 >
-                    <Text style={[styles.segmentText, activeSegment === 'Saved' && styles.segmentTextActive]}>Saved Recipes</Text>
+                    <Text style={[styles.segmentText, activeSegment === 'Saved' && styles.segmentTextActive]}>Saved</Text>
                 </TouchableOpacity>
             </View>
 
+            {/* Render Content based on Active Segment */}
             <View style={styles.contentContainer}>
-                {isLoggingFoodSnapMeal ?
-                    <View style={styles.centered}><ActivityIndicator size="large" color={PALETTE.darkGreen} /><Text style={{marginTop: 10}}>Logging your meal...</Text></View>
-                    : renderSegmentContent()
-                }
+                {renderSegmentContent()}
             </View>
+
             <TabNavigation />
         </View>
     );
 };
 
-// Styles (ensure all referenced styles are defined here or imported)
 const styles = StyleSheet.create({
-    screenContainer: { flex: 1, backgroundColor: PALETTE.lightCream, },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: PALETTE.lightCream, },
-    messageText: { fontSize: 16, textAlign: 'center', marginBottom: 15, color: PALETTE.darkGrey, fontFamily: "Quicksand_700Bold" },
-    subMessageText: { fontSize: 14, color: PALETTE.grey, fontFamily: "Quicksand_700Bold" }, // For barcode permission denied
-    buttonSpacer: { height: 15 }, // For barcode permission denied
+    screenContainer: {
+        flex: 1,
+        backgroundColor: PALETTE.lightCream, 
+    },
+    centered: { 
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: PALETTE.lightCream, 
+    },
+    messageText: { 
+        fontSize: 16, 
+        textAlign: 'center', 
+        marginBottom: 15, 
+        color: PALETTE.darkGrey, 
+        fontFamily: "Quicksand_700Bold" 
+    },
+    subMessageText: { fontSize: 14, color: PALETTE.grey, fontFamily: "Quicksand_700Bold" },
+    buttonSpacer: { height: 15 },
     loadingInfoText: { marginTop: 10, color: PALETTE.darkGrey, fontFamily: 'Quicksand_600SemiBold', },
-    errorText: { color: PALETTE.errorRed, textAlign: 'center', fontFamily: 'Quicksand_600SemiBold', fontSize: 16, marginBottom: 15, },
+    errorText: { color: PALETTE.darkGrey, textAlign: 'center', fontFamily: 'Quicksand_600SemiBold', fontSize: 16, marginBottom: 15, },
     retryButton: { backgroundColor: PALETTE.darkGreen, paddingVertical: 10, paddingHorizontal: 25, borderRadius: 20, },
     retryButtonText: { color: PALETTE.white, fontSize: 16, fontFamily: 'Quicksand_700Bold', },
 
-    segmentButton: { flex: 1, paddingVertical: 15, alignItems: 'center', backgroundColor: PALETTE.lightOrange },
-    segmentActive: { borderBottomWidth: 3, borderBottomColor: PALETTE.darkGreen },
-    segmentText: { fontSize: 16, color: PALETTE.darkGrey, fontFamily: 'Quicksand_600SemiBold'},
-    segmentTextActive: { color: PALETTE.darkGreen, fontFamily: 'Quicksand_700Bold'},
+    segmentActive: { backgroundColor: PALETTE.darkGreen, },
+    segmentText: { fontSize: 14, fontWeight: '600', color: PALETTE.darkGrey, fontFamily: 'Quicksand_700Bold'},
+    segmentTextActive: { color: PALETTE.white, fontFamily: 'Quicksand_700Bold' },
 
-    contentContainer: { flex: 1, },
+    contentContainer: { flex: 1, marginTop: 15, marginBottom: 70, },
     optionsContentContainer: { flex: 1, paddingTop: 20, alignItems: 'center', paddingHorizontal: 20, },
-    mascotImage: { width: 120, height: 120, marginVertical: 20, marginBottom: 30 },
+    mascotImage: { width: 120, height: 120, marginVertical: 40 },
     optionButton: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: PALETTE.lightOrange,
-        paddingVertical: 18, paddingHorizontal: 25, borderRadius: 15,
-        marginBottom: 18, width: '100%',
+        paddingVertical: 15, paddingHorizontal: 20, borderRadius: 20,
+        marginBottom: 15, width: '95%', marginVertical: 20,
         justifyContent: 'space-between', elevation: 2,
-        shadowColor: PALETTE.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1,
+        shadowColor: PALETTE.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 2,
     },
-    buttonText: { fontSize: 18, color: PALETTE.darkGreen, fontFamily: 'Quicksand_600SemiBold' },
+    buttonText: { fontSize: 20, color: 'black', fontFamily: 'Quicksand_700Bold' },
 
     cameraContainer: { flex: 1, position: 'relative', backgroundColor: 'black' },
     camera: { ...StyleSheet.absoluteFillObject },
@@ -373,11 +491,12 @@ const styles = StyleSheet.create({
     loadingText: { color: PALETTE.white, marginTop: 10, fontSize: 16, textAlign: 'center', paddingHorizontal: 20 },
     scannedDataOverlay: { position: 'absolute', bottom: 20, left: 20, right: 20, backgroundColor: 'rgba(0, 0, 0, 0.7)', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 5 },
     scannedDataText: { color: PALETTE.white, textAlign: 'center', fontSize: 14 },
-    cameraBackButton: { position: 'absolute', top: Platform.OS === 'ios' ? 50 : 20, left: 15, padding: 5, zIndex: 10 },
+    cameraBackButton: { position: 'absolute', top: Platform.OS === 'ios' ? 50 : 30, left: 15, padding: 5, },
 
     savedListContainer: { paddingHorizontal: 10, paddingTop: 10, paddingBottom: 20, },
     emptyListContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, marginTop: 50, },
     emptyListText: { fontSize: 17, color: PALETTE.darkGrey, textAlign: 'center', fontFamily: 'Quicksand_600SemiBold', marginBottom: 8, },
+    emptyListSubText: { fontSize: 14, color: PALETTE.grey, textAlign: 'center', fontFamily: 'Quicksand_500Medium' },
 });
 
 export default AddMeal;

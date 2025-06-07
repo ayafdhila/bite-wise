@@ -15,6 +15,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"; 
+import Header from "../Header";
+import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
 
 /**
  * Props for the CameraView component.
@@ -49,6 +51,13 @@ export const CameraView: React.FC<CameraViewProps> = ({
     aspect: [4, 3],
   },
 }) => {
+  let [fontsLoaded] = useFonts({
+    Quicksand_400Regular,
+    Quicksand_500Medium,
+    Quicksand_600SemiBold,
+    Quicksand_700Bold,
+  });
+
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<ExpoCameraView>(null);
@@ -60,10 +69,8 @@ export const CameraView: React.FC<CameraViewProps> = ({
       if (!permission) {
         return;
       }
-      if (!permission.granted) {
-        if (permission.canAskAgain) {
-          await requestPermission();
-        }
+      if (!permission.granted && permission.canAskAgain) {
+        await requestPermission();
       }
     };
 
@@ -109,60 +116,67 @@ export const CameraView: React.FC<CameraViewProps> = ({
     }
   };
 
-  if (permission === null || (!isCameraReady && !permission?.granted)) {
-    // Show loading while permission is null or camera is not ready and permission not explicitly denied
+  if (!permission) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#556B2F" />
-        <Text style={styles.message}>Loading Camera...</Text>
+      <View style={styles.container}>
+        <Header 
+          showBackButton={true} 
+          onBackPress={onClose}
+          subtitle="Camera Access" 
+        />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#556B2F" />
+          <Text style={styles.message}>
+            {fontsLoaded ? "Checking camera permissions..." : "Loading..."}
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        {" "}
-        <Text style={styles.message}>
-          Camera access is required to analyze food.
-        </Text>
-        <TouchableOpacity
-          style={styles.permissionButton}
-          onPress={requestPermission}
-          disabled={!permission.canAskAgain} // Disable if cannot ask again
-        >
-          <Text style={styles.permissionButtonText}>Grant Permission</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.closeButtonAlt} onPress={onClose}>
-          <Text style={styles.closeButtonTextAlt}>Close</Text>
-        </TouchableOpacity>
+      <View style={styles.container}>
+        <Header 
+          showBackButton={true} 
+          onBackPress={onClose}
+          subtitle="Camera Permission" 
+        />
+        <View style={styles.centered}>
+          <Text style={styles.message}>
+            We need camera access to take photos of your food
+          </Text>
+          <TouchableOpacity
+            style={styles.permissionButton}
+            onPress={requestPermission}
+          >
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.closeButtonAlt} onPress={onClose}>
+            <Text style={styles.closeButtonTextAlt}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
+  // Main camera view - NO HEADER HERE since FoodSnapFlow already provides one
   return (
     <View style={styles.container}>
       <ExpoCameraView
-        ref={cameraRef}
         style={styles.camera}
         facing={facing}
-        onCameraReady={handleCameraReady} // Set camera ready state
+        onCameraReady={handleCameraReady}
+        ref={cameraRef}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-            disabled={isProcessing}
-          >
-            <Ionicons name="close" size={30} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Capture Your Meal</Text>
+        {/* Add flip camera button */}
+        <View style={styles.topControls}>
           <TouchableOpacity
             style={styles.flipButton}
             onPress={toggleCameraFacing}
             disabled={isProcessing}
           >
-            <Ionicons name="camera-reverse" size={30} color="white" />
+            <Ionicons name="camera-reverse" size={28} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
@@ -178,11 +192,12 @@ export const CameraView: React.FC<CameraViewProps> = ({
             <View style={styles.captureButtonInner} />
           </TouchableOpacity>
         </View>
+        
         {(isProcessing || !isCameraReady) && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#FFFFFF" />
             <Text style={styles.loadingOverlayText}>
-              {!isCameraReady ? "Initializing Camera..." : "Processing..."}
+              {isProcessing ? "Processing..." : "Preparing camera..."}
             </Text>
           </View>
         )}
@@ -194,35 +209,28 @@ export const CameraView: React.FC<CameraViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#6B8E23", 
-  },
-  centered: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FAEBD7", 
+    backgroundColor: "#000000",
   },
   camera: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.3)", 
-  },
-  closeButton: {
-    padding: 10,
-  },
-  title: {
-    color: "#FFFFFF", 
-    fontSize: 18,
-    fontWeight: "600",
+  topControls: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    zIndex: 1,
   },
   flipButton: {
-    padding: 10,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    borderRadius: 25,
+    padding: 12,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    backgroundColor: "#F4E4C3",
   },
   footer: {
     position: "absolute",
@@ -258,9 +266,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginTop: 10,
     fontSize: 16,
+    fontFamily: 'Quicksand_600SemiBold',
   },
   message: {
     fontSize: 18,
+    fontFamily: 'Quicksand_600SemiBold',
     color: "#556B2F", 
     textAlign: "center",
     marginBottom: 20,
@@ -276,13 +286,12 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: 'Quicksand_700Bold',
   },
   disabledButton: {
     opacity: 0.5,
   },
   closeButtonAlt: {
-    
     marginTop: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -290,5 +299,6 @@ const styles = StyleSheet.create({
   closeButtonTextAlt: {
     color: "#007AFF", 
     fontSize: 16,
+    fontFamily: 'Quicksand_600SemiBold',
   },
 });
