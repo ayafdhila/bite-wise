@@ -53,7 +53,7 @@ export default function GoalScreen() {
             const responseText = await response.text(); console.log(`Goal Update resp (${response.status}):`, responseText);
             if (!response.ok) { let e=responseText; try{const j=JSON.parse(e); e=j.error||j.message||e;}catch(p){} throw new Error(e || `Failed (${response.status})`); }
             console.log("GoalScreen: Navigating to SettingProfile...");
-            navigation.navigate("SettingProfile", { ...previousParams, goal: selected }); // Pass accumulated data
+            navigation.navigate("SettingProfile", { ...previousParams, goal: selected }); 
         } catch (error) { console.error("Error updating goal:", error); Alert.alert("Error", error.message || "Failed."); }
         finally { setIsSubmitting(false); }
     };

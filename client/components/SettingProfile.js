@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useContext } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, TextInput, FlatList, Alert, Dimensions, StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { auth } from '../firebaseConfig';
 import { AuthContext } from '../components/AuthContext';
@@ -13,7 +13,7 @@ export default function SettingProfile() {
     const { user } = useContext(AuthContext);
     const uid = user?.uid;
     const navigation = useNavigation();
-
+    const route = useRoute();
     const [selectedGender, setSelectedGender] = useState(null);
     const [customInput, setCustomInput] = useState('');
     const [age, setAge] = useState('');
@@ -91,8 +91,17 @@ export default function SettingProfile() {
                     Authorization: `Bearer ${idToken}`
                 }
             });
-
-            navigation.navigate("MotivationalScreen", { uid });
+            const nextScreenParams = {
+            ...route.params, // Spreads uid, ..., goal
+            gender: finalGender,
+            age: parsedAge,
+            height: parsedHeight,
+            weight: parsedWeight,
+            targetWeight: parsedTargetWeight,
+            // isKg: true, // if you set this
+            // startWeight: parsedWeight, // if you set this
+        };
+            navigation.navigate("MotivationalScreen", { ...nextScreenParams });
 
         } catch (error) {
             Alert.alert("Update Error", "An error occurred while updating your profile.");
@@ -100,7 +109,7 @@ export default function SettingProfile() {
             setIsSubmitting(false);
         }
     };
-
+ 
     return (
         <View style={styles.container}>
             <Image source={require('../assets/Images/leaf.png')} style={styles.topLeaf} />

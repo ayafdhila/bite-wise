@@ -3,7 +3,7 @@ const admin = require('firebase-admin');
 
 // --- CONFIGURATION ---
 // !! Replace with the actual path to your service account key file !!
-const serviceAccount = require('./bitewise-4d93e-firebase-adminsdk-fbsvc-3ad383a638.json'); // <-- ADJUST FILENAME
+const serviceAccount = require('./bitewise-4d93e-firebase-adminsdk-fbsvc-50e288e9cd.json'); // <-- ADJUST FILENAME
 // !! Replace with the UID of the user you want to make an admin !!
 const uidToMakeAdmin = '9hvIFiBGaXhTjDDGjjD2q7aERKk1'; // <-- REPLACE THIS
 // -------------------

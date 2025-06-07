@@ -6,6 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 export default function MotivationalScreen() {
   const route = useRoute();
+  const receivedParams = route.params || {};
   const navigation = useNavigation();
   const { uid } = route.params || {}; 
 
@@ -24,7 +25,7 @@ export default function MotivationalScreen() {
       <View style={localstyles.actionButtonContainer}>
                     <TouchableOpacity
                          style={localstyles.primaryActionButton}
-                         onPress = {()=> navigation.navigate('TransformationScreen',{uid})}>
+                         onPress={() => navigation.navigate('TransformationScreen', { ...route.params })}> 
                          <Text style={localstyles.primaryActionButtonText}>Next</Text>
                     </TouchableOpacity>
                     </View>

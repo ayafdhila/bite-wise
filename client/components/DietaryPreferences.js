@@ -13,6 +13,7 @@ export default function DietaryPreferences() {
     const uid = user?.uid;
   const navigation = useNavigation();
   const route = useRoute();
+const allPassedParams = route.params || {};
   const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
   const [selectedOptions, setSelectedOptions] = useState([]);
@@ -61,17 +62,11 @@ export default function DietaryPreferences() {
       const data = await response.json();
       if (response.ok) {
         console.log("Dietary Preferences Updated:", data);
-        navigation.navigate("ActivityLevel", {
-  previousParams: {
-    uid,
-    age: user.age,
-    gender: user.gender,
-    goal: user.goal,
-    height: user.height,
-    weight: user.weight,
-    dietaryPreferences: finalSelection
-  }
-});
+    const nextScreenParams = {
+    ...allPassedParams, // Spread ALL parameters received by this screen
+    dietaryPreferences: finalSelection // Add the data collected by this screen
+};
+navigation.navigate("ActivityLevel", nextScreenParams);
 
       } else {
         Alert.alert("Error", data.error || "Failed to update dietary preferences");

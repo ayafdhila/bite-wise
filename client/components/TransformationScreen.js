@@ -25,7 +25,9 @@ const BottomPopup = ({visible}) =>{
 export default function TransformationScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { uid } = route.params || {}; 
+  const allPassedParams = route.params || {};
+  console.log("TransformationScreen received params:", JSON.stringify(allPassedParams, null, 2)); // ADD THIS LINE
+  const uid = allPassedParams.uid;
   const [visible, setVisible] = useState(false);
   const [selected, setSelected] = useState(null)
   const [selectedOptions, setSelectedOptions] = useState([]);
@@ -71,8 +73,12 @@ export default function TransformationScreen() {
       // Wait for 2 seconds, then navigate
       setTimeout(() => {
         setVisible(false);
-        navigation.navigate("DietaryPreferences", { uid });
-      }, 2000);
+        const nextScreenParams = {
+            ...allPassedParams, 
+            transformationGoals: selectedOptions 
+          };
+          navigation.navigate("DietaryPreferences", nextScreenParams);
+        }, 2000);
     } else {
       setVisible(false);
       Alert.alert("Error", data.error || "Failed to update transformation goals");
