@@ -10,6 +10,12 @@ firebase-debug.*.log*
 # Firebase cache
 .firebase/
 
+# Firebase service account keys
+config/bitewise-4d93e-firebase-adminsdk-fbsvc-46f67f9960.json
+firebase-admin-scripts/bitewise-4d93e-firebase-adminsdk-fbsvc-46f67f9960.json
+*firebase-adminsdk*.json
+*.json
+
 /config/firebase-admin-sdk.json
 
 # Dependencies
