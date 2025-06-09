@@ -3,18 +3,19 @@ import React from "react";
 import styles from "./Styles";
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useNotifications } from './NotificationContext';
 
 export default function Header({
   subtitle, 
   style, 
-  showBackButton = false,     // New prop for conditional back button
-  onBackPress,                // New prop for custom back action
-  rightIcon,                  // New prop for right icon (only for specific screens)
-  onRightIconPress            // New prop for right icon action
+  showBackButton = true,
+  onBackPress,
+  rightIcon,
+  onRightIconPress
 }) {
   const navigation = useNavigation();
+  const { unreadCount } = useNotifications();
   
-  // Use custom back press if provided, otherwise use navigation.goBack()
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
@@ -33,12 +34,23 @@ export default function Header({
         />
         <Text style={styles.appName}>Bite wise</Text>
         
-        {/* Always show notifications and settings */}
-        <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-          <Ionicons name="notifications-outline" size={24} color="black" />
+        {/* Notifications with badge */}
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('NotificationsScreen')}
+          style={styles.notificationContainer}
+        >
+          <Ionicons name="notifications-outline" size={24} color="#2E4A32" />
+          {unreadCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? '99+' : unreadCount.toString()}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
+
         <TouchableOpacity onPress={() => navigation.navigate('userSettings')}>
-          <Ionicons name="settings-outline" size={24} color="black" />
+          <Ionicons name="settings-outline" size={24} color="#2E4A32" />
         </TouchableOpacity>
       </View>
       
@@ -47,7 +59,7 @@ export default function Header({
         {/* Show back button conditionally */}
         {showBackButton && (
           <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="black" />
+            <Ionicons name="arrow-back" size={24} color="#2E4A32" />
           </TouchableOpacity>
         )}
         
@@ -57,7 +69,7 @@ export default function Header({
         {/* Right icon only for specific screens (like NutritionDisplay) */}
         {rightIcon && onRightIconPress ? (
           <TouchableOpacity onPress={onRightIconPress} style={styles.rightIconButton}>
-            <Ionicons name={rightIcon} size={24} color="black" />
+            <Ionicons name={rightIcon} size={24} color="#2E4A32" />
           </TouchableOpacity>
         ) : (
           // Empty view to maintain layout balance when no right icon

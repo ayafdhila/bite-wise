@@ -3,7 +3,11 @@ const { firebaseInstances } = require('../config/firebase'); // Adjust path if n
 const admin = firebaseInstances.admin; // Admin SDK instance
 const db = firebaseInstances.db;       // Firestore instance
 const FieldValue = admin.firestore.FieldValue; // Firestore FieldValue
-
+const { 
+    sendCoachRejectionEmail, 
+    sendCoachApprovalEmail,
+    validateEmailAddress 
+} = require('../utils/emailService');
 // Helper: Check Firebase Init
 function checkFirebaseReady(res, action = "perform action") {
     if (!admin || !db) { // Check Admin SDK (includes Auth) and DB
@@ -103,55 +107,139 @@ const getMultipleUserDetailsWithAuthStatus = async (userIds) => {
      } catch (error) { console.error("ADMIN Helper: Error in getMultipleUserDetailsWithAuth:", error); return {}; }
  };
 
- exports.verifyCoach = async (req, res) => {
+exports.verifyCoach = async (req, res) => {
     if (!checkFirebaseReady(res, "verify coach")) return;
-    const adminId = req.user.uid;
-    // --- V V V --- GET coachId FROM req.params --- V V V ---
-    const { coachId } = req.params; // Matches ':coachId' in your route
-    // --- ^ ^ ^ --- END GET FROM PARAMS --- ^ ^ ^ ---
-    // --- V V V --- GET 'verify' FROM req.body --- V V V ---
-    const { verify } = req.body; // 'verify' status comes from the body
-    // --- ^ ^ ^ --- END GET FROM BODY --- ^ ^ ^ ---
-
-    // Renamed nutritionistId to coachId internally for consistency with param
-    if (!coachId || typeof verify !== 'boolean') {
-        return res.status(400).json({ error: 'Coach ID (from URL) and verify status (true/false in body) are required.' });
+    
+    const { coachId } = req.params;
+    const { verify, rejectionReason } = req.body;
+    
+    // Validation
+    if (!coachId) {
+        return res.status(400).json({ error: 'Coach ID is required.' });
     }
-    console.log(`CTRL: Admin ${adminId} attempting to set verification status of coach ${coachId} to ${verify}.`);
+    if (typeof verify !== 'boolean') {
+        return res.status(400).json({ error: 'Verify status must be boolean.' });
+    }
+    
+    console.log(`CTRL: Admin ${req.user.uid} ${verify ? 'approving' : 'rejecting'} coach ${coachId}`);
 
     try {
-        const coachRef = db.collection('nutritionists').doc(coachId); // Use coachId from params
+        // Get coach data
+        const coachDocRef = db.collection('nutritionists').doc(coachId);
+        const coachDoc = await coachDocRef.get();
+        
+        if (!coachDoc.exists) {
+            return res.status(404).json({ error: 'Coach not found.' });
+        }
 
-        await db.runTransaction(async (transaction) => {
-            const coachSnap = await transaction.get(coachRef);
-            if (!coachSnap.exists) {
-                throw new Error('Nutritionist document not found.');
-            }
-            transaction.update(coachRef, {
-                isVerified: verify,
-                verifiedAt: verify ? FieldValue.serverTimestamp() : FieldValue.delete(),
-                verifiedBy: verify ? adminId : FieldValue.delete()
+        const coachData = coachDoc.data();
+        const coachEmail = coachData.email;
+        const coachName = `${coachData.firstName || ''} ${coachData.lastName || ''}`.trim() || 'Coach';
+
+        // Validate email before proceeding
+        if (!validateEmailAddress(coachEmail)) {
+            console.warn(`Invalid email address for coach ${coachId}: ${coachEmail}`);
+            return res.status(400).json({ error: 'Coach has invalid email address.' });
+        }
+
+        let emailResult = { success: false };
+
+        if (verify) {
+            // APPROVE COACH
+            await coachDocRef.update({
+                isVerified: true,
+                verifiedAt: FieldValue.serverTimestamp(),
+                verifiedBy: req.user.uid,
+                status: 'approved'
             });
+
+            // Send approval email
+            emailResult = await sendCoachApprovalEmail(coachEmail, coachName);
+            
+            // Update Firebase Auth custom claims
+            try {
+                await admin.auth().setCustomUserClaims(coachId, { 
+                    verified: true,
+                    userType: 'Professional'
+                });
+                console.log(`Custom claims updated for approved coach ${coachId}`);
+            } catch (claimsError) {
+                console.warn(`Custom claims update failed for ${coachId}:`, claimsError);
+            }
+
+        } else {
+            // REJECT COACH - SUPPRIMER LE COMPTE
+            const finalRejectionReason = rejectionReason?.trim() || 'Application did not meet our current requirements';
+            
+            try {
+                // 1. Envoyer l'email AVANT de supprimer (car on aura besoin des données)
+                emailResult = await sendCoachRejectionEmail(coachEmail, coachName, finalRejectionReason);
+                console.log(`Email de rejet envoyé à ${coachEmail}:`, emailResult);
+
+                // 2. Supprimer de Firebase Auth
+                await admin.auth().deleteUser(coachId);
+                console.log(`[ACCOUNT DELETION] Firebase Auth account deleted: ${coachId}`);
+
+                // 3. Supprimer de Firestore
+                await coachDocRef.delete();
+                console.log(`[ACCOUNT DELETION] Firestore document deleted: ${coachId}`);
+
+                console.log(`[ADMIN ACTION] Coach ${coachId} rejected and account completely deleted by admin ${req.user.uid}`);
+
+                return res.status(200).json({ 
+                    message: 'Coach rejected and account deleted. User can sign up again with same email.',
+                    coachId: coachId,
+                    action: 'deleted',
+                    emailSent: emailResult.success,
+                    emailError: emailResult.success ? null : emailResult.error,
+                    canSignUpAgain: true
+                });
+
+            } catch (deletionError) {
+                console.error(`Error during coach rejection and deletion for ${coachId}:`, deletionError);
+                
+                // Si la suppression échoue, au moins mettre le statut rejected
+                await coachDocRef.update({
+                    isVerified: false,
+                    rejectedAt: FieldValue.serverTimestamp(),
+                    rejectedBy: req.user.uid,
+                    rejectionReason: finalRejectionReason,
+                    status: 'rejected'
+                });
+
+                return res.status(500).json({
+                    error: 'Failed to delete account after rejection. Status updated to rejected.',
+                    details: deletionError.message
+                });
+            }
+        }
+
+        // Log the action for admin audit trail
+        console.log(`Coach ${coachId} ${verify ? 'approved' : 'rejected'} by admin ${req.user.uid}. Email result:`, emailResult);
+
+        res.status(200).json({ 
+            message: `Coach ${verify ? 'approved' : 'rejected'} successfully.`,
+            emailSent: emailResult.success,
+            emailError: emailResult.success ? null : emailResult.error,
+            coach: {
+                id: coachId,
+                name: coachName,
+                email: coachEmail,
+                status: verify ? 'approved' : 'rejected'
+            }
         });
 
-         try {
-             await admin.auth().getUser(coachId); // Check if Auth user exists
-             await admin.auth().setCustomUserClaims(coachId, { verifiedCoach: verify });
-             console.log(`CTRL: Custom claim 'verifiedCoach: ${verify}' set for ${coachId}`);
-         } catch(claimError) {
-              console.error(`CTRL Admin Warning: Failed to set custom claim for ${coachId}:`, claimError);
-         }
-
-        const action = verify ? "verified" : "unverified";
-        console.log(`CTRL: Coach ${coachId} ${action} successfully by admin ${adminId}.`);
-        res.status(200).json({ message: `Coach ${action} successfully.` });
-
     } catch (error) {
-        console.error(`CTRL Admin Error: verifying coach ${coachId}:`, error);
-         if (error.message === 'Nutritionist document not found.') {
-             return res.status(404).json({ error: 'Nutritionist not found.' });
-         }
-        res.status(500).json({ error: `Failed to ${verify ? 'verify' : 'unverify'} coach.` });
+        console.error(`Error ${verify ? 'approving' : 'rejecting'} coach ${coachId}:`, error);
+        
+        if (error.message === 'Coach not found.') {
+            return res.status(404).json({ error: 'Coach not found.' });
+        }
+        
+        res.status(500).json({ 
+            error: `Failed to ${verify ? 'approve' : 'reject'} coach.`,
+            details: error.message 
+        });
     }
 };
 
@@ -574,18 +662,196 @@ exports.getNutritionistDetailsById = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch nutritionist details.' });
     }
 };
+// Add to adminController.js
 
+// Get single user details by ID
+exports.getUserById = async (req, res) => {
+    if (!checkFirebaseReady(res, "get user by ID")) return;
+    const adminId = req.user.uid;
+    const { userId } = req.params;
 
-// --- Export ALL functions ---
-// Using direct assignment which works correctly
-exports.verifyCoach = exports.verifyCoach;
-exports.getPendingCoaches = exports.getPendingCoaches;
-exports.getAllUsers = exports.getAllUsers;
-exports.toggleUserStatus = exports.toggleUserStatus;
-exports.deleteUserAccount = exports.deleteUserAccount;
-exports.getAdminDashboardSummary = exports.getAdminDashboardSummary;
-exports.getFeedbacks = exports.getFeedbacks;
-exports.updateFeedbackStatus = exports.updateFeedbackStatus;
-exports.deleteFeedback = exports.deleteFeedback;
-exports.getNutritionistDetailsById = exports.getNutritionistDetailsById; 
-// Remove the redundant module.exports = {} block if it exists
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID parameter is required.' });
+    }
+    console.log(`CTRL: Admin ${adminId} fetching details for user ${userId}.`);
+
+    try {
+        // Check all possible collections where user might exist
+        const userRef = db.collection('users').doc(userId);
+        const nutriRef = db.collection('nutritionists').doc(userId);
+        const adminRef = db.collection('admin').doc(userId);
+
+        // Get all docs in parallel
+        const [userSnap, nutriSnap, adminSnap] = await Promise.all([
+            userRef.get(),
+            nutriRef.get(),
+            adminRef.get()
+        ]);
+
+        let userData = null;
+        let userType = 'Unknown';
+
+        // Determine which collection has the user data (priority: admin > nutritionist > user)
+        if (adminSnap.exists) {
+            userData = adminSnap.data();
+            userType = 'Admin';
+        } else if (nutriSnap.exists) {
+            userData = nutriSnap.data();
+            userType = 'Professional';
+        } else if (userSnap.exists) {
+            userData = userSnap.data();
+            userType = 'Personal';
+        }
+
+        if (!userData) {
+            console.warn(`CTRL: User ${userId} not found in any Firestore collection.`);
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        // Get Firebase Auth data for additional info
+        let authUser = null;
+        try {
+            authUser = await admin.auth().getUser(userId);
+        } catch (authError) {
+            console.warn(`CTRL: Auth data not found for user ${userId}:`, authError.message);
+        }
+
+        // Combine Firestore and Auth data
+        const combinedUserData = {
+            id: userId,
+            uid: userId,
+            ...userData,
+            userType: userData.userType || userType,
+            email: authUser?.email || userData.email || '',
+            authDisabled: authUser?.disabled || false,
+            profileImageUrl: userData.profileImage || userData.profileImageUrl || null,
+            isVerified: userData.isVerified === true,
+            onboardingComplete: userData.onboardingComplete === true,
+        };
+
+        console.log(`CTRL: Found user ${userId}. UserType: ${combinedUserData.userType}`);
+        res.status(200).json(combinedUserData);
+
+    } catch (error) {
+        console.error(`CTRL Admin Error: fetching details for user ${userId}:`, error);
+        res.status(500).json({ error: 'Failed to fetch user details.' });
+    }
+};
+
+// Update user by ID
+exports.updateUserById = async (req, res) => {
+    if (!checkFirebaseReady(res, "update user by ID")) return;
+    const adminId = req.user.uid;
+    const { userId } = req.params;
+    const updateData = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID parameter is required.' });
+    }
+
+    console.log(`CTRL: Admin ${adminId} updating user ${userId} with data:`, JSON.stringify(updateData, null, 2));
+
+    try {
+        // Determine which Firestore collection the user is in
+        const userRef = db.collection('users').doc(userId);
+        const nutriRef = db.collection('nutritionists').doc(userId);
+        const adminRef = db.collection('admin').doc(userId);
+
+        const [userSnap, nutriSnap, adminSnap] = await Promise.all([
+            userRef.get(),
+            nutriRef.get(),
+            adminRef.get()
+        ]);
+
+        let targetRef = null;
+        let currentUserType = null;
+
+        if (adminSnap.exists) {
+            targetRef = adminRef;
+            currentUserType = 'Admin';
+        } else if (nutriSnap.exists) {
+            targetRef = nutriRef;
+            currentUserType = 'Professional';
+        } else if (userSnap.exists) {
+            targetRef = userRef;
+            currentUserType = 'Personal';
+        }
+
+        if (!targetRef) {
+            return res.status(404).json({ error: 'User not found in Firestore.' });
+        }
+
+        // Handle user type changes - move between collections if needed
+        const newUserType = updateData.userType;
+        if (newUserType && newUserType !== currentUserType) {
+            console.log(`CTRL: User type changing from ${currentUserType} to ${newUserType}`);
+            
+            // Create new document in appropriate collection
+            let newRef;
+            if (newUserType === 'Admin') {
+                newRef = db.collection('admin').doc(userId);
+            } else if (newUserType === 'Professional') {
+                newRef = db.collection('nutritionists').doc(userId);
+            } else {
+                newRef = db.collection('users').doc(userId);
+            }
+
+            // Use transaction to move data
+            await db.runTransaction(async (transaction) => {
+                // Delete from old collection
+                transaction.delete(targetRef);
+                
+                // Create in new collection with updated data
+                transaction.set(newRef, {
+                    ...updateData,
+                    lastUpdatedAt: FieldValue.serverTimestamp(),
+                    lastUpdatedBy: adminId
+                });
+            });
+        } else {
+            // Same collection, just update
+            await targetRef.update({
+                ...updateData,
+                lastUpdatedAt: FieldValue.serverTimestamp(),
+                lastUpdatedBy: adminId
+            });
+        }
+
+        // Update Firebase Auth if needed
+        if (updateData.email && updateData.email !== updateData.email) {
+            try {
+                await admin.auth().updateUser(userId, { email: updateData.email });
+                console.log(`CTRL: Updated Firebase Auth email for ${userId}`);
+            } catch (authError) {
+                console.warn(`CTRL: Failed to update Auth email for ${userId}:`, authError.message);
+            }
+        }
+
+        // Update auth disabled status if provided
+        if (typeof updateData.authDisabled === 'boolean') {
+            try {
+                await admin.auth().updateUser(userId, { disabled: updateData.authDisabled });
+                console.log(`CTRL: Updated Firebase Auth disabled status for ${userId} to ${updateData.authDisabled}`);
+            } catch (authError) {
+                console.warn(`CTRL: Failed to update Auth disabled status for ${userId}:`, authError.message);
+            }
+        }
+
+        // Update custom claims for coach verification
+        if (newUserType === 'Professional' && typeof updateData.isVerified === 'boolean') {
+            try {
+                await admin.auth().setCustomUserClaims(userId, { verifiedCoach: updateData.isVerified });
+                console.log(`CTRL: Updated verifiedCoach claim for ${userId} to ${updateData.isVerified}`);
+            } catch (claimError) {
+                console.warn(`CTRL: Failed to update custom claim for ${userId}:`, claimError.message);
+            }
+        }
+
+        console.log(`CTRL: User ${userId} updated successfully by admin ${adminId}.`);
+        res.status(200).json({ message: 'User updated successfully.' });
+
+    } catch (error) {
+        console.error(`CTRL Admin Error: updating user ${userId}:`, error);
+        res.status(500).json({ error: 'Failed to update user.' });
+    }
+};

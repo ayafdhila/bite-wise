@@ -5,6 +5,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { NavigationContainer } from '@react-navigation/native';
 import AchievementModal from './components/AchievementModal'; // Adjust path
 import { AuthProvider, AuthContext } from './components/AuthContext'; // Adjust path
+import { NotificationProvider } from './components/NotificationContext';
 // --- Navigators ---
 import AuthNavigator from './components/AuthNavigator';
 import PersonalNavigator from './components/PersonalNavigator';
@@ -76,12 +77,15 @@ export default function App() {
     <PaperProvider>
       <AuthProvider>
         <GamificationProvider>
+          <NotificationProvider>
           {/* Wrap the entire app in the GamificationProvider */}
         <NavigationContainer>
           <RootNavigatorContent />
           <AchievementModal />
         </NavigationContainer>
+        </NotificationProvider>
         </GamificationProvider>
+        
       </AuthProvider>
     </PaperProvider>
   );

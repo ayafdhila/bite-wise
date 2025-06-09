@@ -41,29 +41,76 @@ export default function AdminManageUsers() {
 
     // --- State ---
     const [users, setUsers] = useState([]);
+    const [filteredUsers, setFilteredUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [actionLoadingId, setActionLoadingId] = useState(null);
+    const [selectedFilter, setSelectedFilter] = useState('All'); // Add filter state
 
     const fetchUsers = useCallback(async (isRefresh = false) => {
-      
-        if (!adminUser?.admin) {  return; }
-        if (!isRefresh) setIsLoading(true); setError(null); setActionLoadingId(null);
+        if (!adminUser?.admin) { return; }
+        if (!isRefresh) setIsLoading(true); 
+        setError(null); 
+        setActionLoadingId(null);
+        
         try {
-            const token = await getIdToken(); if (!token) throw new Error("Auth error");
-            const response = await fetch(USERS_ENDPOINT, { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await response.json(); if (!response.ok) throw new Error(data.error || "Failed fetch");
-      
-             const sortedUsers = (data.users || []).sort((a, b) => a.email?.localeCompare(b.email || ''));
+            const token = await getIdToken(); 
+            if (!token) throw new Error("Auth error");
+            
+            const response = await fetch(USERS_ENDPOINT, { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const data = await response.json(); 
+            if (!response.ok) throw new Error(data.error || "Failed fetch");
+  
+            const sortedUsers = (data.users || []).sort((a, b) => a.email?.localeCompare(b.email || ''));
             setUsers(sortedUsers);
-        } catch (err) { console.error("AdminManageUsers: Fetch error:", err); setError(err.message); setUsers([]); }
-        finally { setIsLoading(false); setRefreshing(false); }
+            setFilteredUsers(sortedUsers); // ✅ Fixed: changed from sortedSortedUsers to sortedUsers
+        } catch (err) { 
+            console.error("AdminManageUsers: Fetch error:", err); 
+            setError(err.message); 
+            setUsers([]); 
+            setFilteredUsers([]);
+        } finally { 
+            setIsLoading(false); 
+            setRefreshing(false); 
+        }
     }, [adminUser, getIdToken]);
 
-    useEffect(() => { if (isFocused && adminUser?.admin) { fetchUsers(); } }, [isFocused, adminUser, fetchUsers]);
+    // Filter users based on selected filter
+    useEffect(() => {
+        let filtered = users;
+        
+        switch (selectedFilter) {
+            case 'Personal':
+                filtered = users.filter(user => user.userType === 'Personal');
+                break;
+            case 'Coach':
+                filtered = users.filter(user => user.userType === 'Professional');
+                break;
+            case 'Admin':
+                filtered = users.filter(user => user.userType === 'Admin' || user.isAdmin === true);
+                break;
+            case 'All':
+            default:
+                filtered = users;
+                break;
+        }
+        
+        setFilteredUsers(filtered);
+    }, [users, selectedFilter]);
 
-    const onRefresh = useCallback(() => { setRefreshing(true); fetchUsers(true); }, [fetchUsers]);
+    useEffect(() => { 
+        if (isFocused && adminUser?.admin) { 
+            fetchUsers(); 
+        } 
+    }, [isFocused, adminUser, fetchUsers]);
+
+    const onRefresh = useCallback(() => { 
+        setRefreshing(true); 
+        fetchUsers(true); 
+    }, [fetchUsers]);
 
     const performUserAction = useCallback(async (userId, endpoint, method, body, successMsg, confirmTitle, confirmMsg) => {
         Alert.alert(confirmTitle, confirmMsg, [
@@ -114,6 +161,41 @@ export default function AdminManageUsers() {
          );
     }, [performUserAction]);
 
+    const handleModifyUser = useCallback((user) => {
+        navigation.navigate('AdminEditUser', { 
+            userId: user.uid || user.id,
+            userType: user.userType || (user.isAdmin ? 'Admin' : 'Unknown'), // Pass the user type
+            userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email, // Optional: pass name for header
+        });
+    }, [navigation]);
+
+    // Filter buttons component
+    const renderFilterButtons = () => {
+        const filters = ['All', 'Personal', 'Coach', 'Admin'];
+        
+        return (
+            <View style={styles.filterContainer}>
+                {filters.map((filter) => (
+                    <TouchableOpacity
+                        key={filter}
+                        style={[
+                            styles.filterButton,
+                            selectedFilter === filter && styles.filterButtonActive
+                        ]}
+                        onPress={() => setSelectedFilter(filter)}
+                    >
+                        <Text style={[
+                            styles.filterButtonText,
+                            selectedFilter === filter && styles.filterButtonTextActive
+                        ]}>
+                            {filter}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        );
+    };
+
     const renderUserItem = ({ item }) => {
         const user = item;
         const isItemLoading = actionLoadingId === user.uid;
@@ -137,29 +219,44 @@ export default function AdminManageUsers() {
              } catch (e) { console.error("Date format error for user:", user.uid, e); }
         }
 
-
         const isDisabled = user.authDisabled === true;
         const statusText = isDisabled ? 'Disabled' : 'Active';
         const statusStyle = isDisabled ? styles.statusDisabled : styles.statusActive;
 
         const renderActionButtons = () => {
             if (user.userType === 'Admin' || user.isAdmin) {
-                return <Text style={[styles.statusText, styles.roleAdmin]}>Admin</Text>; 
+                return (
+                    <View style={styles.actionButtonsGroup}>
+                        <TouchableOpacity
+                            style={[styles.actionButtonBase, styles.modifyButton]}
+                            onPress={() => handleModifyUser(user)}
+                            disabled={isItemLoading}>
+                            <Ionicons name="create-outline" size={16} color={PALETTE.white} />
+                        </TouchableOpacity>
+                    </View>
+                ); 
             }
             if (user.userType === 'Professional' && user.isVerified !== true) {
                 return (
-                    <TouchableOpacity
-                        style={[styles.actionButtonBase, styles.verifyButton]}
-                        onPress={() => navigation.navigate('AdminVerifyCoach', { focusCoachId: user.uid })}
-                        disabled={isItemLoading} >
-                        {isItemLoading ? <ActivityIndicator size="small" color={PALETTE.white} /> : <Text style={styles.actionButtonText}>Verify</Text>}
-                    </TouchableOpacity>
+                    <View style={styles.actionButtonsGroup}>
+                        <TouchableOpacity
+                            style={[styles.actionButtonBase, styles.verifyButton]}
+                            onPress={() => navigation.navigate('AdminVerifyCoach', { focusCoachId: user.uid })}
+                            disabled={isItemLoading} >
+                            {isItemLoading ? <ActivityIndicator size="small" color={PALETTE.white} /> : <Text style={styles.actionButtonText}>Verify</Text>}
+                        </TouchableOpacity>
+                    </View>
                 );
             }
 
             return (
                 <View style={styles.actionButtonsGroup}>
-                  
+                    <TouchableOpacity
+                        style={[styles.actionButtonBase, styles.modifyButton]}
+                        onPress={() => handleModifyUser(user)}
+                        disabled={isItemLoading}>
+                        <Ionicons name="create-outline" size={16} color={PALETTE.white} />
+                    </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.actionButtonBase, styles.deleteButton]}
                         onPress={() => handleDeleteUser(user)}
@@ -171,7 +268,6 @@ export default function AdminManageUsers() {
         };
 
         return (
-
             <View style={styles.userCard}>
                 <View style={styles.userInfoContainer}>
                     <Text style={styles.nameText}>{displayName}</Text>
@@ -189,10 +285,13 @@ export default function AdminManageUsers() {
         );
     };
 
-
     return (
         <View style={styles.screenContainer}>
             <AdminHeader subtitle="Manage Users" />
+            
+            {/* Filter Section */}
+            {renderFilterButtons()}
+            
             {isLoading && !refreshing ? (
                 <View style={styles.loadingContainer}><ActivityIndicator size="large" color={PALETTE.darkGreen} /></View>
             ) : error ? (
@@ -202,20 +301,24 @@ export default function AdminManageUsers() {
                  </View>
             ) : (
                 <FlatList
-                    data={users}
+                    data={filteredUsers} // Use filtered users instead of all users
                     renderItem={renderUserItem}
                     keyExtractor={(item) => item.id || item.uid}
                     contentContainerStyle={styles.listPadding}
-                    ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyText}>No users found.</Text></View>}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>
+                                {selectedFilter === 'All' ? 'No users found.' : `No ${selectedFilter.toLowerCase()} users found.`}
+                            </Text>
+                        </View>
+                    }
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PALETTE.darkGreen]} />}
-
                 />
             )}
             <AdminTabNavigation/>
         </View>
     );
 }
-
 
 const styles = StyleSheet.create({
     screenContainer: { flex: 1, backgroundColor: PALETTE.lightCream },
@@ -228,6 +331,33 @@ const styles = StyleSheet.create({
     emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
     emptyText: { fontSize: 16, color: PALETTE.darkGrey, fontStyle: 'italic' },
 
+    // Updated Filter styles to match AdminFeedback
+    filterContainer: { 
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        backgroundColor: PALETTE.darkGreen, 
+        borderBottomWidth: 1,
+        borderBottomColor: PALETTE.grey,
+    },
+    filterButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 15,
+        backgroundColor: PALETTE.lightCream, 
+    },
+    filterButtonActive: {
+        backgroundColor: PALETTE.mediumGreen, 
+    },
+    filterButtonText: {
+        fontSize: 13,
+        color: PALETTE.darkGrey,
+        fontWeight: '600',
+    },
+    filterButtonTextActive: {
+        color: PALETTE.white, 
+    },
 
     userCard: {
         backgroundColor: PALETTE.lightOrange, 
@@ -257,12 +387,10 @@ const styles = StyleSheet.create({
         color: PALETTE.white, 
         textAlign: 'center',
     },
- 
     rolePersonal: { backgroundColor: PALETTE.personalGreen },
     roleCoach: { backgroundColor: PALETTE.coachOrange },
     roleAdmin: { backgroundColor: PALETTE.adminBlue },
     roleUnknown: { backgroundColor: PALETTE.grey },
-    // Status text
     statusText: { fontSize: 11, fontWeight: 'bold', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 5, overflow: 'hidden', marginRight: 8, marginBottom: 3, textAlign: 'center', },
     statusActive: { backgroundColor: PALETTE.successGreen, color: PALETTE.white },
     statusDisabled: { backgroundColor: PALETTE.rejectRed, color: PALETTE.white },
@@ -272,7 +400,6 @@ const styles = StyleSheet.create({
     dateText: { fontSize: 11, color: PALETTE.darkGrey, fontFamily: 'Quicksand_500Medium', marginBottom: 3 },
   
     actionsContainer: {
-    
          justifyContent: 'center',
     },
     actionButtonsGroup: { 
@@ -288,6 +415,7 @@ const styles = StyleSheet.create({
     },
     actionButtonText: { color: PALETTE.white, fontSize: 12, fontWeight: 'bold', fontFamily: 'Quicksand_600SemiBold' },
     verifyButton: { backgroundColor: PALETTE.mediumGreen, width: 80 }, 
+    modifyButton: { backgroundColor: PALETTE.pendingOrange, paddingHorizontal: 8 }, // New modify button style
     enableButton: { backgroundColor: PALETTE.successGreen },
     disableButton: { backgroundColor: PALETTE.pendingOrange },
     deleteButton: { backgroundColor: PALETTE.errorRed, paddingHorizontal: 8 }, 

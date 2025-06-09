@@ -10,7 +10,7 @@ import {
   splitPortionForEditing,
 } from "@/utils/nutritionUtils";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useContext } from "react";
 import {
   Image,
   ScrollView,
@@ -19,8 +19,15 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
-import Header from "../Header"; // Import your Header component
+import Header from "../Header";
+import { AuthContext } from "../AuthContext";
+
+// Add API configuration
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const getCurrentDate = () => new Date().toISOString().split('T')[0];
 
 // Extended FoodItem type for editing state
 /**
@@ -81,7 +88,9 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
     onSave,
     onRetake,
   }) => {
+    const { user } = useContext(AuthContext);
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     // Use the extended type for editedResult
     const [editedResult, setEditedResult] =
       useState<EditableFoodAnalysisResult>(
@@ -140,6 +149,112 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
         handleSaveEdits();
       } else {
         handleStartEditing();
+      }
+    };
+
+    // Add the meal logging function
+    const handleSaveMeal = async () => {
+      if (!user?.uid) {
+        Alert.alert("Error", "User not logged in.");
+        return;
+      }
+
+      const currentResult = isEditing ? editedResult : processResultForEditing(result);
+      
+      if (!currentResult) {
+        Alert.alert("Error", "No nutrition data to save.");
+        return;
+      }
+
+      if (isSaving) return; // Prevent double-submission
+
+      setIsSaving(true);
+
+      try {
+        const date = getCurrentDate();
+        
+        // Create meal payload from the analyzed food data
+        const mealPayload = {
+          uid: user.uid,
+          mealType: "snack", // Changed from "Snacks" to "snack" (lowercase and singular)
+          date: date,
+          title: currentResult.foods.length > 0 
+            ? currentResult.foods.map(food => food.name).join(", ")
+            : "AI Analyzed Food",
+          
+          // Use the total nutrition from the analysis
+          calories: Math.round(currentResult.nutritionPerServing.calories),
+          protein: Math.round(currentResult.nutritionPerServing.protein * 10) / 10,
+          carbs: Math.round(currentResult.nutritionPerServing.carbs * 10) / 10,
+          fat: Math.round(currentResult.nutritionPerServing.fat * 10) / 10,
+          fiber: Math.round(currentResult.nutritionPerServing.fiber * 10) / 10,
+          
+          imageUrl: imageDataUri || null,
+          source: "ai-food-analysis",
+          barcode: null,
+          recipeId: null,
+          servingSize: 1,
+          servingUnit: "serving",
+          
+          // Additional data for AI-analyzed foods
+          analysisData: {
+            foods: currentResult.foods.map(food => ({
+              name: food.name,
+              portion: food.estimatedPortion,
+              confidence: food.confidence,
+              nutrition: food.nutrition
+            })),
+            recognitionConfidence: currentResult.recognitionConfidence,
+            imageQuality: currentResult.imageQuality,
+            notes: currentResult.notes
+          }
+        };
+
+        console.log("Saving AI-analyzed meal with payload:", JSON.stringify(mealPayload, null, 2));
+
+        const response = await fetch(`${API_BASE_URL}/logMeal/log-meal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mealPayload),
+        });
+
+        let responseBody;
+        try {
+          responseBody = await response.json();
+        } catch (e) {
+          if (response.ok) {
+            responseBody = { message: "Meal logged successfully" };
+          } else {
+            throw new Error(`Server error (${response.status}) - Non-JSON response`);
+          }
+        }
+
+        if (!response.ok) {
+          throw new Error(responseBody.message || responseBody.error || `Server error (${response.status})`);
+        }
+
+        console.log("AI-analyzed meal logged successfully! Response:", responseBody);
+        
+        // Show success message
+        Alert.alert(
+          "Success", 
+          `${mealPayload.title} has been added to your meal log!`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                // Call the original onSave callback to handle navigation
+                onSave();
+              }
+            }
+          ]
+        );
+
+      } catch (error) {
+        console.error("Error saving AI-analyzed meal:", error);
+        Alert.alert("Save Failed", `Could not save meal: ${error.message}`);
+      } finally {
+        setIsSaving(false);
       }
     };
 
@@ -361,15 +476,13 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       []
     );
 
-    const displayResult = isEditing
-      ? editedResult
-      : processResultForEditing(result); // Ensure displayResult is always processed
+    // Use a single displayResult that's computed based on current state
+    const displayResult = isEditing ? editedResult : processResultForEditing(result);
 
     if (!displayResult) {
       // Handle case where result might be null or undefined initially
       return (
         <View style={styles.container}>
-          {/* Replace the unified header with your Header component */}
           <Header 
             showBackButton={true} 
             onBackPress={onRetake}
@@ -455,7 +568,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
 
     return (
       <View style={styles.container}>
-        {/* Replace the unified header with your Header component */}
         <Header 
           showBackButton={true} 
           onBackPress={onRetake}
@@ -464,7 +576,9 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
           onRightIconPress={handleEditIconPress}
         />
 
-        {imageDataUri && (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        
+          {imageDataUri && (
           <View style={styles.imageDisplayContainer}>
             <Image
               source={{ uri: imageDataUri }}
@@ -472,9 +586,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
             />
           </View>
         )}
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* --- Confidence Section --- */}
           <View style={styles.confidenceSectionCard}>
             <Text style={styles.confidenceSectionTitle}>Analysis Quality</Text>
 
@@ -998,9 +1109,19 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity style={styles.addButton} onPress={onSave}>
-              <Ionicons name="add" size={20} color="#FCCF94" />
-              <Text style={styles.addButtonText}>Add to Log</Text>
+            <TouchableOpacity 
+              style={[styles.addButton, isSaving && styles.addButtonDisabled]} 
+              onPress={handleSaveMeal}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator color="#FCCF94" size="small" />
+              ) : (
+                <Ionicons name="add" size={20} color="#FCCF94" />
+              )}
+              <Text style={styles.addButtonText}>
+                {isSaving ? "Saving..." : "Add to Log"}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1405,6 +1526,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Quicksand_700Bold',
     marginLeft: 10,
+  },
+  addButtonDisabled: {
+    opacity: 0.6,
   },
   saveButton: {
     backgroundColor: "#2E4A31", 

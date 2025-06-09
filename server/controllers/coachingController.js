@@ -3,6 +3,7 @@ const { firebaseInstances } = require('../config/firebase'); // Adjust path if n
 const admin = firebaseInstances.admin; // Needed for FieldValue
 const db = firebaseInstances.db;       // Firestore instance
 const FieldValue = admin.firestore.FieldValue; // Import FieldValue
+const { sendCoachRequestAcceptedNotification } = require('./notificationController');
 
 // Helper: Check Firebase DB readiness
 function checkFirebaseReady(res, action = "perform action") {
@@ -497,6 +498,13 @@ exports.acceptRequest = async (req, res) => {
             status: 'accepted',
             acceptedTimestamp: FieldValue.serverTimestamp()
         });
+
+        // After request is accepted, send notification
+        const coachDoc = await db.collection('nutritionists').doc(coachId).get();
+        const coachData = coachDoc.data();
+        const coachName = `${coachData.firstName} ${coachData.lastName}`.trim();
+        
+        await sendCoachRequestAcceptedNotification(userId, coachName);
 
         console.log(`CTRL: Request ${requestId} from user ${userId} accepted by coach ${coachId}.`);
         res.status(200).json({ message: "Request accepted successfully." });

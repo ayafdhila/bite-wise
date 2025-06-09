@@ -51,6 +51,9 @@ const messageRoutes = require('./Routes/messageRoutes');
 const nutritionalProgramRoutes = require("./Routes/nutritionalProgramRoutes");
 const adminRoutes = require("./Routes/adminRoutes"); // Assuming prefix /admin
 const { requireAdminAuth } = require("./middleware/adminAuthMiddleware"); // Import SPECIFIC admin auth middleware
+const notificationRoutes = require('./Routes/notificationRoutes');
+const notificationScheduler = require('./services/NotificationScheduler'); // This starts the scheduler
+
 // --- Mount Routes ---
 // Mount the imported route handlers
 
@@ -96,6 +99,10 @@ console.log("[Routes] Mounted /messages ");
 app.use("/nutrition-programs", nutritionalProgramRoutes);
 console.log("[Routes] Mounted /nutrition-programs ");
 app.use("/admin", adminRoutes);
+
+// Add notification routes
+app.use('/', notificationRoutes);
+
 // --- Global Error Handling Middleware ---
 // This should usually be the LAST middleware added
 app.use((err, req, res, next) => {
@@ -110,9 +117,9 @@ const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0'; // Listen on all available network interfaces
 
 app.listen(PORT, HOST, () => {
-
   console.log(` Serveur BiteWise démarré sur http://${HOST}:${PORT}`);
   console.log(` Accessible depuis toutes les interfaces réseau.`);
   console.log(` Firebase connection verified.`);
 
+  console.log("📅 Notification scheduler is running...");
 });

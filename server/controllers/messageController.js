@@ -3,6 +3,7 @@ const { firebaseInstances } = require('../config/firebase'); // Adjust path if n
 const admin = firebaseInstances.admin; // Needed for FieldValue
 const db = firebaseInstances.db;       // Firestore instance
 const FieldValue = admin.firestore.FieldValue; // Import FieldValue
+const { sendNewMessageNotification, sendNewMessageNotificationToCoach } = require('./notificationController');
 
 // Helper: Check Firebase DB readiness
 function checkFirebaseReady(res, action = "perform action") {
@@ -128,9 +129,9 @@ exports.getChatMessages = async (req, res) => {
 // --- Send a new message in a specific chat ---
 exports.sendChatMessage = async (req, res) => {
     if (!checkFirebaseReady(res, "send chat message")) return;
-    const senderId = req.user?.uid; // The user/coach sending the message
-    const { chatId } = req.params; // Chat ID from URL
-    const { text, receiverId } = req.body; // Message text and recipient's UID from body
+    const senderId = req.user?.uid;
+    const { chatId } = req.params;
+    const { text, imageUrl } = req.body;
 
     // Validate inputs
     if (!senderId) return res.status(401).json({ error: "User authentication missing." });
@@ -138,10 +139,8 @@ exports.sendChatMessage = async (req, res) => {
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
         return res.status(400).json({ error: "Message text cannot be empty." });
     }
-    if (!receiverId) return res.status(400).json({ error: "Receiver ID is required." });
-    if (senderId === receiverId) return res.status(400).json({ error: "Cannot send message to yourself." }); // Prevent self-messaging
 
-    console.log(`CTRL: sendChatMessage invoked by ${senderId} in chat: ${chatId} to user: ${receiverId}`);
+    console.log(`CTRL: sendChatMessage invoked by ${senderId} in chat: ${chatId}`);
 
     try {
         // References
@@ -152,9 +151,20 @@ exports.sendChatMessage = async (req, res) => {
         const chatDocSnap = await chatDocRef.get();
         if (!chatDocSnap.exists) return res.status(404).json({ error: "Chat not found." });
         const chatData = chatDocSnap.data();
-        // Ensure BOTH sender and receiver are in the participants list for this chat
-        if (!chatData.participants || !chatData.participants.includes(senderId) || !chatData.participants.includes(receiverId)) {
-             return res.status(403).json({ error: "Sender or receiver not authorized for this chat." });
+        
+        // Get participants and determine receiver
+        const participants = chatData.participants || [];
+        if (!participants.includes(senderId)) {
+            return res.status(403).json({ error: "Sender not authorized for this chat." });
+        }
+        
+        const receiverId = participants.find(p => p !== senderId);
+        if (!receiverId) {
+            return res.status(400).json({ error: "Unable to determine message receiver." });
+        }
+        
+        if (senderId === receiverId) {
+            return res.status(400).json({ error: "Cannot send message to yourself." });
         }
 
         // Prepare message data
@@ -186,6 +196,46 @@ exports.sendChatMessage = async (req, res) => {
         });
         console.log(`CTRL: sendChatMessage - Updated parent chat ${chatId} metadata. Incremented ${unreadFieldToIncrement}.`);
 
+        // Send notification after message is sent successfully
+        if (receiverId && text) {
+            // Determine if receiver is a coach or user
+            const receiverDoc = await db.collection('users').doc(receiverId).get();
+            let senderName = 'Someone';
+            let isReceiverCoach = false;
+            
+            if (receiverDoc.exists) {
+                // Receiver is a regular user
+                const receiverData = receiverDoc.data();
+                isReceiverCoach = false;
+            } else {
+                // Check if receiver is a coach
+                const coachDoc = await db.collection('nutritionists').doc(receiverId).get();
+                if (coachDoc.exists) {
+                    isReceiverCoach = true;
+                }
+            }
+            
+            // Get sender info
+            const senderDoc = await db.collection('users').doc(senderId).get();
+            if (senderDoc.exists) {
+                const senderData = senderDoc.data();
+                senderName = `${senderData.firstName} ${senderData.lastName}`.trim() || senderData.userName || 'User';
+            } else {
+                // Sender is a coach
+                const nutriDoc = await db.collection('nutritionists').doc(senderId).get();
+                if (nutriDoc.exists) {
+                    const nutriData = nutriDoc.data();
+                    senderName = `Dr. ${nutriData.firstName} ${nutriData.lastName}`.trim() || 'Your Coach';
+                }
+            }
+            
+            // Send notification to the appropriate collection
+            if (isReceiverCoach) {
+                await sendNewMessageNotificationToCoach(receiverId, senderName, text);
+            } else {
+                await sendNewMessageNotification(receiverId, senderName, text);
+            }
+        }
 
         res.status(201).json({ message: "Message sent successfully.", messageId: newMessageRef.id });
          // TODO: Implement push notification trigger (ideally via Cloud Function)

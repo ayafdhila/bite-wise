@@ -7,6 +7,7 @@ import AdminManageUsers from './AdminManageUsers';
 import AdminFeedback from './AdminFeedback';
 import AdminCoachDetailScreen from './AdminCoachDetailScreen'; 
 import AdminSettings from './AdminSettings';
+import AdminEditUser from './AdminEditUser';
 const Stack = createStackNavigator();
 
 export default function AdminNavigator() {
@@ -30,6 +31,7 @@ export default function AdminNavigator() {
         component={AdminFeedback}/>
       <Stack.Screen name="AdminCoachDetailScreen" component={AdminCoachDetailScreen} />
       <Stack.Screen name="AdminSettings" component={AdminSettings} />
+      <Stack.Screen name="AdminEditUser" component={AdminEditUser} />
     </Stack.Navigator>
     
     

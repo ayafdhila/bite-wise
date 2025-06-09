@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react'; 
-import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'; 
+import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } from 'react-native'; 
 import styles from './Styles'; 
 import Header from './Header'; 
 import TabNavigation from './TabNavigation'; 
@@ -28,7 +28,12 @@ export default function Home() {
   const [streak, setStreak] = useState(0);
   const [userGoalText, setUserGoalText] = useState('Set Goal'); 
   const [isLoading, setIsLoading] = useState(true);
- 
+
+  // Popup states
+  const [showExceededPopup, setShowExceededPopup] = useState(false);
+  const [exceededCount, setExceededCount] = useState(0);
+  const [hasShownExceededPopup, setHasShownExceededPopup] = useState(false);
+
   const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
   const DAILY_DATA_ENDPOINT = '/logMeal/daily-data'; 
   const meals = ['Breakfast', 'Lunch', 'Dinner', 'Snacks']; 
@@ -149,6 +154,29 @@ export default function Home() {
     streak,
     meals
   });
+
+  // Check for exceeded goals
+  const checkExceededConsumption = useCallback(() => {
+    let exceeded = 0;
+    
+    if (consumedCals > goalCalories && goalCalories > 0) exceeded++;
+    if (consumedProtein > goalProtein && goalProtein > 0) exceeded++;
+    if (consumedCarbs > goalCarbs && goalCarbs > 0) exceeded++;
+    if (consumedFat > goalFat && goalFat > 0) exceeded++;
+    if (consumedFiber > goalFiber && goalFiber > 0) exceeded++;
+
+    if (exceeded > 0 && !hasShownExceededPopup) {
+      setExceededCount(exceeded);
+      setShowExceededPopup(true);
+      setHasShownExceededPopup(true);
+    }
+  }, [consumedCals, goalCalories, consumedProtein, goalProtein, consumedCarbs, goalCarbs, consumedFat, goalFat, consumedFiber, goalFiber, hasShownExceededPopup]);
+
+  useEffect(() => {
+    if (uid && !isLoading) {
+      checkExceededConsumption();
+    }
+  }, [checkExceededConsumption, uid, isLoading]);
 
   if (isLoading && uid) { 
     return (
@@ -373,6 +401,103 @@ export default function Home() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Cute Small Popup */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showExceededPopup}
+        onRequestClose={() => setShowExceededPopup(false)}
+      >
+        <View style={cutePopupStyles.overlay}>
+          <View style={cutePopupStyles.popup}>
+            <Text style={cutePopupStyles.emoji}>⚠️</Text>
+            <Text style={cutePopupStyles.title}>Alert: Goals Exceeded!</Text>
+            <Text style={cutePopupStyles.message}>
+              You've exceeded {exceededCount > 1 ? `${exceededCount} daily goals` : 'a daily goal'} today.
+            </Text>
+            <Text style={cutePopupStyles.subMessage}>
+              Consider lighter portions for your next meals! 🥗
+            </Text>
+            <TouchableOpacity
+              style={cutePopupStyles.button}
+              onPress={() => setShowExceededPopup(false)}
+            >
+              <Text style={cutePopupStyles.buttonText}>Got it! ✨</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+// Cute popup styles
+const cutePopupStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  popup: {
+    backgroundColor: '#FCCF94',
+    borderRadius: 25,
+    padding: 25,
+    alignItems: 'center',
+    maxWidth: 320,
+    width: '90%',
+    elevation: 15,
+    shadowColor: '#2E4A32',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    borderWidth: 3,
+    borderColor: '#F5E4C3',
+  },
+  emoji: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A32',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 16,
+    color: '#2E4A32',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
+  subMessage: {
+    fontSize: 14,
+    color: '#2E4A32',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
+  button: {
+    backgroundColor: '#88A76C',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 20,
+    elevation: 3,
+    shadowColor: '#2E4A32',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+});

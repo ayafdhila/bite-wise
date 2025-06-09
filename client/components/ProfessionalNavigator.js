@@ -12,6 +12,7 @@ import CoachReminders from './CoachReminders'
 import DeleteCoachAccount from './DeleteCoachAccount';
 import EditCoachProfile from './EditCoachProfile';
 import CoachSettings from './CoachSettings';
+
 import { createStackNavigator } from '@react-navigation/stack';
 
 const Stack = createStackNavigator();
@@ -35,6 +36,7 @@ export default function ProfessionalNavigator(){
                 <Stack.Screen name='EditCoachProfile' component={EditCoachProfile}/>
                 <Stack.Screen name='CoachSettings' component={CoachSettings}/>
                 <Stack.Screen name='CoachReminders' component={CoachReminders}/>
+               
             </Stack.Navigator>
 
     )

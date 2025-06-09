@@ -15,9 +15,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"; 
-import Header from "../Header";
-import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
 
+import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
+import Header from "../Header"; // Ensure this path is correct
 /**
  * Props for the CameraView component.
  */
@@ -137,11 +137,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Header 
-          showBackButton={true} 
-          onBackPress={onClose}
-          subtitle="Camera Permission" 
-        />
+       
         <View style={styles.centered}>
           <Text style={styles.message}>
             We need camera access to take photos of your food
