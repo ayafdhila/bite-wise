@@ -18,45 +18,22 @@ import { Alert, Animated, Button, StyleSheet, Text, View } from "react-native";
 
 const IMAGE_QUALITY_THRESHOLD = 0.4; 
 
-// Define Theme interface for FoodSnapFlow styling
 export interface FoodSnapFlowTheme {
   backgroundColor?: string;
   textColor?: string;
   primaryColor?: string;
   destructiveColor?: string;
-  // Add other theme properties as needed, e.g., font sizes, specific component styles
+ 
 }
-
-/**
- * Props for the `FoodSnapFlow` component.
- */
 export interface FoodSnapFlowProps {
-  /** Optional API key for the GeminiVisionService. Overrides environment variable if provided. */
   apiKey?: string;
-  /**
-   * Callback triggered when the food analysis is successfully completed and the user
-   * decides to save/log the meal.
-   * @param {FoodAnalysisResult} analysisResult - The detailed result of the food analysis.
-   * @param {ImageData} image - The image data associated with the analysis.
-   */
+
   onMealLogged: (analysisResult: FoodAnalysisResult, image: ImageData) => void;
-  /**
-   * Callback triggered if the user decides to exit or cancel the flow
-   * before completing a meal log.
-   */
   onFlowCancel: () => void;
-  /**
-   * Optional user ID to associate with the logged meal.
-   * Useful for personalizing experiences or storing data under a specific user account.
-   */
   userId: string;
-  /**
-   * Optional theme object to customize the appearance of the FoodSnapFlow module.
-   * Allows the component to adapt to the host application's look and feel.
-   */
-  theme?: Partial<FoodSnapFlowTheme>; // Theme prop for custom styling
-  initialStep?: FlowStep; // Add this
-  preferredSource?: 'camera' | 'gallery'; // Add this
+  theme?: Partial<FoodSnapFlowTheme>; 
+  initialStep?: FlowStep; 
+  preferredSource?: 'camera' | 'gallery'; 
 }
 
 type FlowStep =
@@ -66,21 +43,7 @@ type FlowStep =
   | "analysis"
   | "results"
   | "imageIssue"; 
-
-/**
- * `FoodSnapFlow` is a comprehensive React Native component that orchestrates the entire
- * food image capture, analysis, and review process. It integrates camera functionality,
- * image preview, interaction with `GeminiVisionService` for AI-powered nutritional analysis,
- * and displays results, allowing users to confirm or retake photos.
- *
- * This component is designed to be a reusable module for applications needing to incorporate
- * a "snap and analyze food" feature.
- *
- * @param {FoodSnapFlowProps} props - The properties to configure and interact with the component.
- * @returns {React.ReactElement} The rendered FoodSnapFlow component.
- */
 export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
-  // START with your regular hooks
   const { theme = {} } = props;
   
   const [currentStep, setCurrentStep] = useState<FlowStep>(() => {
@@ -102,10 +65,8 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const resultsFadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Initialize GeminiVisionService
   useEffect(() => {
     try {
-      // Use apiKey from props if available, otherwise it will use from .env
       const service = new GeminiVisionService(props.apiKey);
       setGeminiService(service);
     } catch (error) {
@@ -114,19 +75,17 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
         "Initialization Error",
         "Could not initialize the food analysis service. Please check your setup and API key."
       );
-      // Potentially navigate back or disable functionality
     }
-  }, [props.apiKey]); // Add props.apiKey to dependency array
+  }, [props.apiKey]); 
 
   useEffect(() => {
     if (currentStep === "results" && analysisState.result) {
       Animated.timing(resultsFadeAnim, {
         toValue: 1,
-        duration: 500, // Slower fade-in for results
+        duration: 500, 
         useNativeDriver: true,
       }).start();
     } else {
-      // Reset animation when not on results screen or no results
       resultsFadeAnim.setValue(0);
     }
   }, [currentStep, analysisState.result, resultsFadeAnim]);
@@ -149,10 +108,10 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
     }
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true, // Or false, depending on desired UX
-      aspect: [4, 3], // Optional
-      quality: 0.8, // Match camera quality
-      base64: true, // Ensure base64 is included for GeminiVisionService
+      allowsEditing: true,
+      aspect: [4, 3], 
+      quality: 0.8, 
+      base64: true, 
     });
 
     if (
@@ -162,14 +121,14 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
     ) {
       const selectedImage = pickerResult.assets[0];
       if (selectedImage.uri && selectedImage.base64) {
-        // Ensure base64 is present
+        
         const imageData: ImageData = {
           uri: selectedImage.uri,
           base64: selectedImage.base64,
           width: selectedImage.width,
           height: selectedImage.height,
         };
-        handleImageCaptured(imageData); // Use the same handler
+        handleImageCaptured(imageData); 
       } else {
         Alert.alert(
           "Error",
@@ -182,31 +141,28 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
   const handleRetakePhoto = useCallback(() => {
     setCapturedImage(null);
     setAnalysisState({ loading: false, result: null, error: null });
-    setRejectionReason(null); // Clear rejection reason
-    
-    // Return to appropriate step based on preferred source
+    setRejectionReason(null); 
+
     if (props.preferredSource === 'camera') {
       setCurrentStep("camera");
     } else if (props.preferredSource === 'gallery') {
-      // For gallery, we'll trigger the picker again via useEffect
       setCurrentStep("initialChoice");
     } else {
-      setCurrentStep("initialChoice"); // Default behavior
+      setCurrentStep("initialChoice"); 
     }
   }, [props.preferredSource]);
 
   const handleAnalyzeImage = useCallback(async () => {
-    if (!capturedImage || !geminiService) return; // Ensure service is initialized
+    if (!capturedImage || !geminiService) return; 
 
     setAnalysisState({ loading: true, result: null, error: null });
-    setRejectionReason(null); // Clear previous rejection reason
+    setRejectionReason(null); 
     setCurrentStep("analysis");
 
     try {
-      // Resize and compress the image
       const manipResult = await ImageManipulator.manipulateAsync(
         capturedImage.uri,
-        [{ resize: { width: 1024, height: 1024 } }], // Resize to fit within 1024x1024, maintaining aspect ratio
+        [{ resize: { width: 1024, height: 1024 } }],
         {
           compress: 0.7,
           format: ImageManipulator.SaveFormat.JPEG,
@@ -218,12 +174,11 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
         throw new Error("Failed to get Base64 string from manipulated image.");
       }
 
-      // Construct the ImageData object for the service
       const imageData: ImageData = {
-        uri: manipResult.uri, // The URI of the manipulated image
+        uri: manipResult.uri, 
         width: manipResult.width,
         height: manipResult.height,
-        base64: manipResult.base64, // The Base64 string of the manipulated image
+        base64: manipResult.base64, 
       };
 
       const analysisResult = await geminiService.analyzeFoodImage(imageData);
@@ -232,7 +187,7 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
         setRejectionReason(
           "No food detected in the image. Please try a different image or retake the photo."
         );
-        setAnalysisState({ loading: false, result: null, error: null }); // Clear previous analysis state
+        setAnalysisState({ loading: false, result: null, error: null }); 
         setCurrentStep("imageIssue");
         return;
       }
@@ -245,12 +200,12 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
             0
           )}%). Please ensure good lighting, clear focus, and no obstructions, then try again.`
         );
-        setAnalysisState({ loading: false, result: null, error: null }); // Clear previous analysis state
+        setAnalysisState({ loading: false, result: null, error: null }); 
         setCurrentStep("imageIssue");
         return;
       }
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Add success haptic feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); 
       setAnalysisState({
         loading: false,
         result: analysisResult,
@@ -273,12 +228,12 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
         "Analysis Failed",
         "Failed to analyze your food image. Please try again.",
         [
-          { text: "Retry", onPress: handleAnalyzeImage }, // handleAnalyzeImage is used in its own definition, this is fine for useCallback
+          { text: "Retry", onPress: handleAnalyzeImage },
           { text: "Retake Photo", onPress: handleRetakePhoto },
         ]
       );
     }
-  }, [capturedImage, geminiService, handleRetakePhoto]); // Added handleRetakePhoto to dependencies
+  }, [capturedImage, geminiService, handleRetakePhoto]); 
 
   const handleEditResult = useCallback((updatedResult: FoodAnalysisResult) => {
     setAnalysisState((prev) => ({
@@ -288,17 +243,12 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
   }, []);
 
   const handleSaveToLog = useCallback(() => {
-    if (!analysisState.result || !capturedImage) return; // Ensure capturedImage is also available
-
-    // Call the onMealLogged prop instead of internal Alert and navigation
+    if (!analysisState.result || !capturedImage) return; 
     props.onMealLogged(analysisState.result, capturedImage);
-
-    // The consuming app will decide what to do next (e.g., navigate or close)
-    // For now, let's reset to initial choice if no cancel prop, or call cancel
     if (props.onFlowCancel) {
       props.onFlowCancel();
     } else {
-      // Default behavior if onFlowCancel is not provided: reset the flow
+    
       setCapturedImage(null);
       setAnalysisState({ loading: false, result: null, error: null });
       setRejectionReason(null);
@@ -309,12 +259,11 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
     capturedImage,
     props.onMealLogged,
     props.onFlowCancel,
-  ]); // Added analysisState.result to dependencies
+  ]); 
 
-  // Handle gallery selection when preferred source is gallery
   useEffect(() => {
     if (props.preferredSource === 'gallery' && currentStep === 'initialChoice') {
-      // Small delay to ensure component is mounted
+
       const timer = setTimeout(() => {
         handleImageSelectedFromGallery();
       }, 100);
@@ -325,7 +274,6 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
   const renderCurrentStep = () => {
     switch (currentStep) {
       case "initialChoice":
-        // Skip this step if we have a preferred source from AddMeal
         if (props.preferredSource === 'camera') {
           return (
             <View style={styles.container}>
@@ -353,7 +301,7 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
             </View>
           );
         } else if (props.preferredSource === 'gallery') {
-          // Show loading while gallery is opening
+ 
           return (
             <View style={styles.container}>
               <Header 
@@ -371,8 +319,7 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
             </View>
           );
         }
-        
-        // Default behavior if no preferred source
+
         return (
           <View style={styles.container}>
             <Header 
@@ -434,7 +381,6 @@ export const FoodSnapFlow: React.FC<FoodSnapFlowProps> = (props) => {
               }}
               subtitle="Capture Your Meal" 
             />
-            {/* CameraView now renders without its own header */}
             <CameraView
               onImageCaptured={handleImageCaptured}
               onClose={() => {

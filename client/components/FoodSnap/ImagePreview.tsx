@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Header from "../Header"; // Add this import
+import Header from "../Header"; 
 import type { ImageData } from "@/types/domain";
 
 interface ImagePreviewProps {

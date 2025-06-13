@@ -13,11 +13,28 @@ console.log("ENV Check - Service Account Path from .env:", process.env.FIREBASE_
 // This needs to run before routes that might depend on Firebase
 const { firebaseInstances } = require("./config/firebase"); // Adjust path if needed
 if (firebaseInstances._initializationError || !firebaseInstances.db || !firebaseInstances.auth || !firebaseInstances.admin) {
-   console.error("CRITICAL: Server cannot start due to Firebase initialization failure. Check ./config/firebase.js and service account path/permissions.");
+   console.error("CRITICAL: Server cannot start due to Firebase initialization failure.");
    process.exit(1); // Exit if Firebase failed to initialize
 }
 console.log("Firebase initialization check passed in server.js.");
 
+// Add this after Firebase initialization
+const { initializeNotificationService } = require('./services/notificationService');
+
+// After Firebase is ready
+if (firebaseInstances.db && firebaseInstances.admin) {
+    console.log('🔥 Firebase initialized successfully');
+    
+    // Initialize notification service
+    const notificationServiceReady = initializeNotificationService();
+    if (notificationServiceReady) {
+        console.log('📱 Notification service initialized');
+    } else {
+        console.error('❌ Failed to initialize notification service');
+    }
+} else {
+    console.error('❌ Firebase initialization failed');
+}
 
 // --- Global Middleware ---
 // Apply these AFTER initializing 'app' and BEFORE mounting routes
@@ -51,8 +68,14 @@ const messageRoutes = require('./Routes/messageRoutes');
 const nutritionalProgramRoutes = require("./Routes/nutritionalProgramRoutes");
 const adminRoutes = require("./Routes/adminRoutes"); // Assuming prefix /admin
 const { requireAdminAuth } = require("./middleware/adminAuthMiddleware"); // Import SPECIFIC admin auth middleware
-const notificationRoutes = require('./Routes/notificationRoutes');
-const notificationScheduler = require('./services/NotificationScheduler'); // This starts the scheduler
+let notificationRoutes;
+try {
+  notificationRoutes = require('./Routes/notificationRoutes');
+} catch (error) {
+  console.warn("Notification routes not loaded:", error.message);
+}
+const notificationScheduler = require('./services/NotificationScheduler');
+const coachNotificationRoutes = require('./Routes/coachNotificationRoutes');
 
 // --- Mount Routes ---
 // Mount the imported route handlers
@@ -99,9 +122,13 @@ console.log("[Routes] Mounted /messages ");
 app.use("/nutrition-programs", nutritionalProgramRoutes);
 console.log("[Routes] Mounted /nutrition-programs ");
 app.use("/admin", adminRoutes);
+app.use('/api/coach', coachNotificationRoutes);
 
-// Add notification routes
-app.use('/', notificationRoutes);
+// Add notification routes if available
+if (notificationRoutes) {
+  app.use('/api', notificationRoutes);
+  console.log("[Routes] Mounted /api/notifications");
+}
 
 // --- Global Error Handling Middleware ---
 // This should usually be the LAST middleware added
@@ -121,5 +148,26 @@ app.listen(PORT, HOST, () => {
   console.log(` Accessible depuis toutes les interfaces réseau.`);
   console.log(` Firebase connection verified.`);
 
-  console.log("📅 Notification scheduler is running...");
+  // Initialiser et démarrer le planificateur de notifications
+  const schedulerInitialized = notificationScheduler.initialize();
+  if (schedulerInitialized) {
+    notificationScheduler.startScheduledNotifications();
+    console.log("📅 Notification scheduler initialized and started!");
+    console.log("⏰ Motivational notifications will be sent 2 times per day (9:00 and 18:00 UTC)");
+  } else {
+    console.error("❌ Failed to start notification scheduler");
+  }
+});
+
+// Graceful shutdown handling
+process.on('SIGINT', () => {
+    console.log('🛑 Shutting down notification scheduler...');
+    notificationScheduler.stopScheduler();
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('🛑 Shutting down notification scheduler...');
+    notificationScheduler.stopScheduler();
+    process.exit(0);
 });

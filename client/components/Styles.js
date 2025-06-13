@@ -1277,17 +1277,52 @@ bottomRow: {
   justifyContent: 'space-between',
   marginTop: 8, // Add some spacing between top and bottom rows
 },
-backButton: {
-  padding: 4,
-  minWidth: 32, // Ensures consistent spacing
-  alignItems: 'center',
-},
+
 rightIconButton: {
   padding: 4,
   minWidth: 32, // Same as backButton to maintain balance
   alignItems: 'center',
 },
-
-
+// Notification styles for Header
+notificationContainer: {
+    position: 'relative',
+    marginHorizontal: 10,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+notificationButton: {
+    position: 'relative',
+},
+badgeContainer: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#E74C3C',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+},
 });
 export default styles;

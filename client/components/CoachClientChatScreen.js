@@ -108,36 +108,43 @@ export default function CoachClientChatScreen() {
         setIsSending(true);
         setError(null);
 
-        const messagesRef = collection(db, 'chats', chatId, 'messages');
-
         try {
-        
-            const messageData = {
-                senderId: coachId,
-                receiverId: clientId,
-                text: textToSend,
-                timestamp: serverTimestamp(), 
-            };
+            // ✅ FIXED: Call your API endpoint instead of direct Firestore
+            const token = await getIdToken();
+            if (!token) {
+                throw new Error('Authentication required');
+            }
 
-            await addDoc(messagesRef, messageData);
-            console.log(`CoachChatScreen: Message sent by coach ${coachId}.`);
+            const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.16:3000';
+            
+            const response = await fetch(`${API_BASE_URL}/messages/${chatId}/send`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: textToSend,
+                    receiverId: clientId
+                })
+            });
 
-            setNewMessageText(''); 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to send message');
+            }
 
+            console.log(`CoachChatScreen: Message sent by coach ${coachId} via API.`);
+            setNewMessageText(''); // Clear input
 
         } catch (err) {
             console.error("CoachChatScreen: Error sending message:", err);
-   
-            if (err.code === 'permission-denied') {
-                 Alert.alert("Error", "You do not have permission to send messages in this chat.");
-            } else {
-                Alert.alert("Error", "Could not send message. Please try again.");
-            }
+            Alert.alert("Error", "Could not send message. Please try again.");
             setError("Failed to send message.");
         } finally {
             setIsSending(false);
         }
-    }, [newMessageText, coachId, clientId, chatId]); 
+    }, [newMessageText, coachId, clientId, chatId, getIdToken]);
 
     const renderMessageItem = ({ item }) => {
         const isMyMessage = item.senderId === coachId;

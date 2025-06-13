@@ -17,31 +17,12 @@ import {
 } from "react-native"; 
 
 import { useFonts, Quicksand_400Regular, Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
-import Header from "../Header"; // Ensure this path is correct
-/**
- * Props for the CameraView component.
- */
+import Header from "../Header"; 
 interface CameraViewProps {
-  /**
-   * Callback function invoked when an image is successfully captured.
-   * @param image - The captured image data.
-   */
   onImageCaptured: (image: ImageData) => void;
-  /**
-   * Callback function invoked when the camera view is closed.
-   */
   onClose: () => void;
-  /**
-   * Optional camera configuration options.
-   */
   options?: CameraOptions;
 }
-
-/**
- * CameraView component provides a user interface for capturing images using the device camera.
- * It handles camera permissions, allows switching between front and back cameras,
- * and provides feedback during image capture and processing.
- */
 export const CameraView: React.FC<CameraViewProps> = ({
   onImageCaptured,
   onClose,
@@ -82,7 +63,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
   };
 
   const toggleCameraFacing = () => {
-    if (isProcessing) return; // Prevent action if processing
+    if (isProcessing) return; 
     setFacing((current: CameraType) => (current === "back" ? "front" : "back"));
   };
 
@@ -156,7 +137,6 @@ export const CameraView: React.FC<CameraViewProps> = ({
     );
   }
 
-  // Main camera view - NO HEADER HERE since FoodSnapFlow already provides one
   return (
     <View style={styles.container}>
       <ExpoCameraView
@@ -165,7 +145,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
         onCameraReady={handleCameraReady}
         ref={cameraRef}
       >
-        {/* Add flip camera button */}
+    
         <View style={styles.topControls}>
           <TouchableOpacity
             style={styles.flipButton}

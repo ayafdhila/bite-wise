@@ -1,64 +1,95 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import {
     View, Text, TouchableOpacity, StyleSheet,
-    ScrollView, ActivityIndicator, RefreshControl, Image // Added Image
+    ScrollView, ActivityIndicator, RefreshControl,
+    Dimensions, Platform
 } from 'react-native';
-import ProHeader from './ProHeader';            // Adjust path if needed
-import ProTabNavigation from '../components/ProTabNavigation'; // Adjust path if needed
-import stylesImport from './Styles';                      // Import your main styles
+import ProHeader from './ProHeader';
+import ProTabNavigation from '../components/ProTabNavigation';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import { AuthContext } from '../components/AuthContext';   // Adjust path if needed
-import axios from 'axios';                              // Using axios
-import { Ionicons } from '@expo/vector-icons';          // For icons
+import { AuthContext } from '../components/AuthContext';
+import axios from 'axios';
+import { Ionicons } from '@expo/vector-icons';
 
-// --- Define Palette (Or import from central location) ---
+const { width: screenWidth } = Dimensions.get('window');
+
+// ✅ Your Exact Color Palette
 const PALETTE = {
     darkGreen: '#2E4A32',
     mediumGreen: '#88A76C',
+    lightGreen: '#A8C888',
     lightOrange: '#FCCF94',
     lightCream: '#F5E4C3',
     white: '#FFFFFF',
     black: '#000000',
     grey: '#A0A0A0',
     darkGrey: '#555555',
-    errorRed: '#D32F2F',
-    // Add specific colors if needed
+    lightGrey: '#E8E8E8',
+    errorRed: '#FF6B6B',
+    // ✅ Better star color using your palette
+    starGold: '#FCCF94', // Using your lightOrange instead of yellow
+    cardShadow: 'rgba(46, 74, 50, 0.15)',
 };
 
-// --- API Base URL ---
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000';
-const DASHBOARD_ENDPOINT = '/coaching/coach/dashboard-summary'; // Ensure backend uses this
+const DASHBOARD_ENDPOINT = '/coaching/coach/dashboard-summary';
 
-// --- Main Component ---
 export default function HomeCoach() {
     const navigation = useNavigation();
     const isFocused = useIsFocused();
-    const { user, getIdToken } = useContext(AuthContext); // Get coach user info
+    const { user, getIdToken } = useContext(AuthContext);
 
-    // --- State for Dashboard Data ---
-    const [dashboardData, setDashboardData] = useState({ // Initialize with defaults
+    const [dashboardData, setDashboardData] = useState({
         activeClientCount: 0,
         pendingInvitationCount: 0,
         messagesNeedingReplyCount: 0,
         newestInvitation: null,
         oldestUnrepliedChat: null,
-        // planRequestCount: 0, // Add other summaries if needed
+    });
+    const [coachRating, setCoachRating] = useState({
+        averageRating: 0,
+        ratingCount: 0
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
 
     const coachId = user?.uid;
-    // Attempt to get a display name, fallback to "Coach"
     const coachDisplayName = user?.firstName || user?.displayName?.split(' ')[0] || 'Coach';
 
-    // --- Fetch Dashboard Data Function ---
+    // Fetch Coach Rating
+    const fetchCoachRating = useCallback(async () => {
+        if (!coachId) return;
+
+        try {
+            const token = await getIdToken();
+            if (!token) return;
+
+            const response = await axios.get(`${API_BASE_URL}/coaching/coach/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data) {
+                setCoachRating({
+                    averageRating: response.data.averageRating || 0,
+                    ratingCount: response.data.ratingCount || 0
+                });
+            }
+        } catch (error) {
+            console.log('Error fetching coach rating:', error);
+        }
+    }, [coachId, getIdToken]);
+
+    // Fetch Dashboard Data
     const fetchDashboardData = useCallback(async (isRefresh = false) => {
         if (!coachId) {
             if (!isRefresh) setIsLoading(false);
-            setRefreshing(false); setError("Login required."); return;
+            setRefreshing(false);
+            setError("Login required.");
+            return;
         }
-        if (!isRefresh) setIsLoading(true); setError(null);
+        if (!isRefresh) setIsLoading(true);
+        setError(null);
 
         try {
             const token = await getIdToken();
@@ -66,22 +97,22 @@ export default function HomeCoach() {
 
             console.log("HomeCoach: Fetching dashboard summary...");
             const url = `${API_BASE_URL}${DASHBOARD_ENDPOINT}`;
-            const response = await axios.get(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            const response = await axios.get(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-             if (typeof response.data !== 'object' || response.data === null) {
-                 console.error("HomeCoach: Invalid data format received", response.data);
-                 throw new Error("Received invalid data from server.");
-             }
+            if (typeof response.data !== 'object' || response.data === null) {
+                console.error("HomeCoach: Invalid data format received", response.data);
+                throw new Error("Received invalid data from server.");
+            }
 
             console.log("HomeCoach: Dashboard data received:", response.data);
-            // Set state with fetched data, providing defaults
             setDashboardData({
                 activeClientCount: response.data.activeClientCount ?? 0,
                 pendingInvitationCount: response.data.pendingInvitationCount ?? 0,
                 messagesNeedingReplyCount: response.data.messagesNeedingReplyCount ?? 0,
                 newestInvitation: response.data.newestInvitation || null,
                 oldestUnrepliedChat: response.data.oldestUnrepliedChat || null,
-                // planRequestCount: response.data.planRequestCount ?? 0, // If added later
             });
 
         } catch (err) {
@@ -91,193 +122,401 @@ export default function HomeCoach() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    }, [coachId, getIdToken]); // Dependencies
+    }, [coachId, getIdToken]);
 
-    // --- Initial Fetch & Refetch on Focus ---
+    // Combined fetch function
+    const fetchAllData = useCallback(async (isRefresh = false) => {
+        await Promise.all([
+            fetchDashboardData(isRefresh),
+            fetchCoachRating()
+        ]);
+    }, [fetchDashboardData, fetchCoachRating]);
+
+    // Effects
     useEffect(() => {
-        if (isFocused && coachId) { fetchDashboardData(); }
-        if (!coachId) { // Handle logout case
-             setIsLoading(false); setError(null);
-             setDashboardData({ activeClientCount: 0, pendingInvitationCount: 0, messagesNeedingReplyCount: 0, newestInvitation: null, oldestUnrepliedChat: null });
+        if (isFocused && coachId) {
+            fetchAllData();
         }
-    }, [isFocused, coachId, fetchDashboardData]); // Rerun if focus or user changes
+        if (!coachId) {
+            setIsLoading(false);
+            setError(null);
+            setDashboardData({
+                activeClientCount: 0,
+                pendingInvitationCount: 0,
+                messagesNeedingReplyCount: 0,
+                newestInvitation: null,
+                oldestUnrepliedChat: null
+            });
+        }
+    }, [isFocused, coachId, fetchAllData]);
 
-    // --- Pull-to-Refresh Handler ---
+    // Refresh handler
     const onRefresh = useCallback(() => {
         setRefreshing(true);
-        fetchDashboardData(true); // Pass true to indicate it's a refresh
-    }, [fetchDashboardData]);
+        fetchAllData(true);
+    }, [fetchAllData]);
 
-    // --- Navigation Handlers ---
-    const goToClients = () => navigation.navigate('Clients'); // Adjust screen name if different
-    const goToInvitations = () => navigation.navigate('Invitations'); // Adjust screen name
-    const goToMessagesList = () => navigation.navigate('CoachMessagesListScreen'); // Adjust screen name
-    const goToChat = (chatInfo) => { // Navigate directly to chat
-         if (chatInfo?.id && chatInfo.userDetails?.userId && chatInfo.userDetails?.userName) {
-              navigation.navigate('CoachClientChat', { // Adjust screen name
-                   chatId: chatInfo.id,
-                   clientId: chatInfo.userDetails.userId,
-                   clientName: chatInfo.userDetails.userName
-              });
-         } else {
-             console.warn("Cannot navigate to specific chat, missing data:", chatInfo);
-             goToMessagesList(); // Fallback to list
-         }
+    // Render Stars Component
+    const renderStars = (rating, size = 18) => {
+        const stars = [];
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = (rating % 1) >= 0.5;
+        
+        for (let i = 0; i < 5; i++) {
+            if (i < fullStars) {
+                stars.push(
+                    <Ionicons key={i} name="star" size={size} color={PALETTE.starGold} />
+                );
+            } else if (i === fullStars && hasHalfStar) {
+                stars.push(
+                    <Ionicons key={i} name="star-half" size={size} color={PALETTE.starGold} />
+                );
+            } else {
+                stars.push(
+                    <Ionicons key={i} name="star-outline" size={size} color={PALETTE.lightGrey} />
+                );
+            }
+        }
+        return stars;
     };
-    // Add handler for Plan Requests navigation if needed
 
-    // --- Render Helper for Dashboard Cards (Enhanced Version) ---
-    const renderDashboardCard = ({ iconName, title, count, subtitle, action, priorityDetails = null }) => (
-        <TouchableOpacity
-            style={styles.dashboardCard}
-            onPress={action}
-            disabled={!action || isLoading || refreshing}
-            activeOpacity={action ? 0.7 : 1}
-         >
-            {/* Icon on the left */}
-            {iconName && (
-                <View style={styles.cardIconContainer}>
-                    <Ionicons name={iconName} size={28} color={PALETTE.darkGreen} />
+    // Render Welcome Header (No Photo, No Gradient)
+    const renderWelcomeHeader = () => (
+        <View style={styles.welcomeHeader}>
+            <View style={styles.welcomeContent}>
+                <View style={styles.textSection}>
+                    <Text style={styles.welcomeText}>Welcome back,</Text>
+                    <Text style={styles.coachName}>{coachDisplayName}!</Text>
+                    
+                    {/* Rating Display */}
+                    <View style={styles.ratingContainer}>
+                        <View style={styles.starsContainer}>
+                            {renderStars(coachRating.averageRating)}
+                        </View>
+                        <Text style={styles.ratingText}>
+                            {coachRating.averageRating > 0 
+                                ? `${coachRating.averageRating.toFixed(1)} (${coachRating.ratingCount} ${coachRating.ratingCount === 1 ? 'review' : 'reviews'})`
+                                : 'No ratings yet'
+                            }
+                        </Text>
+                    </View>
                 </View>
-            )}
-            {/* Text content */}
-            <View style={styles.cardTextContainer}>
-                <Text style={styles.dashboardTitle}>{title} ({count})</Text> {/* Count in Title */}
-                {/* Show dynamic subtitle */}
-                {subtitle && <Text style={styles.dashboardSubtitle} numberOfLines={2}>{subtitle}</Text>}
+                
+                <TouchableOpacity 
+                    style={styles.viewProfileButton}
+                    onPress={() => navigation.navigate('EditCoachProfile')}
+                >
+                    <Ionicons name="person-outline" size={18} color={PALETTE.white} />
+                    <Text style={styles.viewProfileText}>Profile</Text>
+                </TouchableOpacity>
             </View>
-            {/* Chevron Icon on the right */}
-            {action && <Ionicons name="chevron-forward-outline" size={24} color={PALETTE.darkGrey} style={styles.cardChevron}/> }
-        </TouchableOpacity>
+        </View>
     );
 
-
-    // --- Main Render ---
-    return (
-        <View style={styles.mainContainer}>
-            {/* Header with dynamic name */}
-            <ProHeader subtitle={`Welcome back, ${coachDisplayName}!`} showMenuButton={true} navigation={navigation} />
-
-            <ScrollView
-                 contentContainerStyle={styles.scrollContainer}
-                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PALETTE.darkGreen]}/>}
-                 showsVerticalScrollIndicator={false}
-            >
-                {/* Section Title */}
-                <Text style={styles.sectionTitle}>Dashboard</Text>
-
-                {/* Loading / Error State */}
-                {isLoading && !refreshing && <ActivityIndicator size="large" color={PALETTE.darkGreen} style={{ marginTop: 50 }}/>}
-                {error && !isLoading && (
-                    <View style={styles.errorContainer}>
-                        <Text style={styles.errorText}>{error}</Text>
-                         <TouchableOpacity onPress={() => fetchDashboardData()} style={styles.retryButton}>
-                             <Text style={styles.retryButtonText}>Retry</Text>
-                         </TouchableOpacity>
+    // Render Stats Grid
+    const renderStatsGrid = () => (
+        <View style={styles.statsGrid}>
+            <View style={styles.statsRow}>
+                <TouchableOpacity 
+                    style={[styles.statCard, styles.clientsCard]}
+                    onPress={() => navigation.navigate('Clients')}
+                >
+                    <View style={styles.statIconContainer}>
+                        <Ionicons name="people" size={32} color={PALETTE.white} />
                     </View>
-                )}
+                    <Text style={styles.statNumber}>{dashboardData.activeClientCount}</Text>
+                    <Text style={styles.statLabel}>Active Clients</Text>
+                </TouchableOpacity>
 
-                {/* Dashboard Cards - Render only when not loading and no error */}
-                {!isLoading && !error && (
-                    <>
-                        {/* Messages Card */}
-                        {renderDashboardCard({
-                            iconName: "chatbubbles-outline", // Example icon
-                            title: "Messages",
-                            count: dashboardData.messagesNeedingReplyCount,
-                            subtitle: dashboardData.oldestUnrepliedChat
-                                ? `Reply needed: ${dashboardData.oldestUnrepliedChat.userDetails?.userName || 'Unknown'}`
-                                : (dashboardData.unreadMessageCount > 0 ? `${dashboardData.unreadMessageCount} total unread` : "All caught up!"),
-                            action: () => dashboardData.oldestUnrepliedChat ? goToChat(dashboardData.oldestUnrepliedChat) : goToMessagesList(),
-                        })}
+                <TouchableOpacity 
+                    style={[styles.statCard, styles.invitationsCard]}
+                    onPress={() => navigation.navigate('Invitations')}
+                >
+                    <View style={styles.statIconContainer}>
+                        <Ionicons name="mail" size={32} color={PALETTE.white} />
+                        {dashboardData.pendingInvitationCount > 0 && (
+                            <View style={styles.notificationBadge}>
+                                <Text style={styles.badgeText}>
+                                    {dashboardData.pendingInvitationCount > 99 ? '99+' : dashboardData.pendingInvitationCount}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                    <Text style={styles.statNumber}>{dashboardData.pendingInvitationCount}</Text>
+                    <Text style={styles.statLabel}>Pending Invitations</Text>
+                </TouchableOpacity>
+            </View>
 
-                        {/* Invitation Requests Card */}
-                         {renderDashboardCard({
-                            iconName: "person-add-outline", // Example icon
-                            title: "Invitation Requests",
-                            count: dashboardData.invitationRequestCount,
-                            subtitle: dashboardData.newestInvitation
-                                ? `Newest: ${dashboardData.newestInvitation.userDetails?.userName || 'Unknown'} (Goal: ${dashboardData.newestInvitation.userDetails?.goal || 'N/A'})`
-                                : "No pending requests",
-                            action: goToInvitations,
-                         })}
+            <View style={styles.statsRow}>
+                <TouchableOpacity 
+                    style={[styles.statCard, styles.messagesCard]}
+                    onPress={() => navigation.navigate('CoachMessagesListScreen')}
+                >
+                    <View style={styles.statIconContainer}>
+                        <Ionicons name="chatbubbles" size={32} color={PALETTE.white} />
+                        {dashboardData.messagesNeedingReplyCount > 0 && (
+                            <View style={styles.notificationBadge}>
+                                <Text style={styles.badgeText}>
+                                    {dashboardData.messagesNeedingReplyCount > 99 ? '99+' : dashboardData.messagesNeedingReplyCount}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                    <Text style={styles.statNumber}>{dashboardData.messagesNeedingReplyCount}</Text>
+                    <Text style={styles.statLabel}>Pending Messages</Text>
+                </TouchableOpacity>
 
-                         {/* Active Clients Card */}
-                         {renderDashboardCard({
-                            iconName: "people-outline", // Example icon
-                            title: "Active Clients",
-                            count: dashboardData.activeClientCount,
-                            subtitle: `View all ${dashboardData.activeClientCount} clients`,
-                            action: goToClients
-                         })}
+                <TouchableOpacity 
+                    style={[styles.statCard, styles.ratingCard]}
+                    onPress={() => navigation.navigate('EditCoachProfile')}
+                >
+                    <View style={styles.statIconContainer}>
+                        <Ionicons name="star" size={32} color={PALETTE.white} />
+                    </View>
+                    <Text style={styles.statNumber}>
+                        {coachRating.averageRating > 0 ? coachRating.averageRating.toFixed(1) : '0.0'}
+                    </Text>
+                    <Text style={styles.statLabel}>Your Rating</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
 
-                        {/* Placeholder for Plan Requests */}
-                        {/* {renderDashboardCard({ iconName: "document-text-outline", title: "Plan Requests", ... })} */}
-                    </>
-                )}
+    // Loading State
+    if (isLoading) {
+        return (
+            <View style={styles.container}>
+                <ProHeader subtitle="Dashboard" />
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={PALETTE.darkGreen} />
+                    <Text style={styles.loadingText}>Loading your dashboard...</Text>
+                </View>
+                <ProTabNavigation />
+            </View>
+        );
+    }
 
+    // Error State
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <ProHeader subtitle="Dashboard" />
+                <View style={styles.errorContainer}>
+                    <Ionicons name="cloud-offline" size={64} color={PALETTE.errorRed} />
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={() => fetchAllData()}>
+                        <Text style={styles.retryButtonText}>Try Again</Text>
+                    </TouchableOpacity>
+                </View>
+                <ProTabNavigation />
+            </View>
+        );
+    }
+
+    // Main Render
+    return (
+        <View style={styles.container}>
+            <ProHeader subtitle="Dashboard" />
+            
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[PALETTE.darkGreen]}
+                        tintColor={PALETTE.darkGreen}
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
+                {renderWelcomeHeader()}
+                {renderStatsGrid()}
             </ScrollView>
 
-            {/* Fixed Bottom Tab Navigation */}
             <ProTabNavigation />
         </View>
     );
 }
 
-// --- Styles (Ensure these match your design or are in Styles.js) ---
-// Using stylesImport assumes you have these defined in './Styles.js'
-// Providing examples here in case they are missing or need adjustment
 const styles = StyleSheet.create({
-    ...(stylesImport || {}), // Spread imported styles first
-
-    // --- Define FALLBACKS or specific styles for this screen ---
-    mainContainer: (stylesImport?.mainContainer || { flex: 1, backgroundColor: PALETTE.lightCream }),
-    scrollContainer: (stylesImport?.scrollContainer || { padding: 20, paddingBottom: 80 }),
-    sectionTitle: (stylesImport?.sectionTitle || { fontSize: 22, fontFamily: 'Quicksand_700Bold', color: PALETTE.darkGreen, marginBottom: 20, marginLeft: 5}), // Made larger
-    dashboardCard: (stylesImport?.dashboardCard || {
-        backgroundColor: PALETTE.lightOrange,
+    container: {
+        flex: 1,
+        backgroundColor: PALETTE.lightCream,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: PALETTE.darkGrey,
+        fontWeight: '500',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+    },
+    errorText: {
+        fontSize: 16,
+        color: PALETTE.errorRed,
+        textAlign: 'center',
+        marginVertical: 16,
+        fontWeight: '500',
+    },
+    retryButton: {
+        backgroundColor: PALETTE.darkGreen,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 25,
+        elevation: 2,
+    },
+    retryButtonText: {
+        color: PALETTE.white,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 100,
+    },
+    // ✅ Horizontal Welcome Header
+    welcomeHeader: {
+        marginHorizontal: 16,
+        marginTop: 16,
         borderRadius: 20,
-        paddingVertical: 18, // Increased padding
-        paddingHorizontal: 15,
-        marginBottom: 18, // Increased spacing
-        elevation: 3,
-        shadowColor: PALETTE.black, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3,
+        backgroundColor: PALETTE.darkGreen,
+        elevation: 4,
+        shadowColor: PALETTE.cardShadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    welcomeContent: {
+        padding: 20,
+        flexDirection: 'row', // ✅ Horizontal layout
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    textSection: {
+        flex: 1, // ✅ Takes available space
+    },
+    welcomeText: {
+        fontSize: 16,
+        color: PALETTE.white,
+        fontWeight: '500',
+        opacity: 0.9,
+    },
+    coachName: {
+        fontSize: 24,
+        color: PALETTE.white,
+        fontWeight: '700',
+        marginBottom: 12,
+    },
+    ratingContainer: {
+        alignItems: 'flex-start', // ✅ Left aligned in horizontal layout
+    },
+    starsContainer: {
+        flexDirection: 'row',
+        marginBottom: 4,
+    },
+    ratingText: {
+        fontSize: 12,
+        color: PALETTE.white,
+        fontWeight: '500',
+        opacity: 0.9,
+    },
+    viewProfileButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        minHeight: 85,
-    }),
-    cardIconContainer: (stylesImport?.cardIconContainer || {
-        marginRight: 15, // Space between icon and text
-        padding: 8,
-        backgroundColor: PALETTE.lightCream, // Slightly different background for icon?
-        borderRadius: 25, // Circular background
-    }),
-    cardTextContainer: (stylesImport?.cardTextContainer || {
-        flex: 1, // Allow text to take available space
-        fontFamily: 'Quicksand_700Bold',
-    }),
-    dashboardCount: (stylesImport?.dashboardCount || { // Removed count display from here, moved to title
-        // fontSize: 28, fontWeight: 'bold', color: PALETTE.darkGreen, marginBottom: 2,
-    }),
-    dashboardTitle: (stylesImport?.dashboardTitle || {
-        fontSize: 18, // Title size
-        fontFamily: 'Quicksand_700Bold',
-        color: PALETTE.black,
-        marginBottom: 5,
-    }),
-    dashboardSubtitle: (stylesImport?.dashboardSubtitle || {
-        fontSize: 14, // Subtitle size
-        color: PALETTE.darkGreen,
-        flexShrink: 1, // Allow subtitle to wrap/shrink
-        fontFamily: 'Quicksand_700Bold',
-    }),
-    // Removed priority preview styles - simplified card structure
-    cardChevron: (stylesImport?.cardChevron || {
-         marginLeft: 10, // Space before chevron
-    }),
-    errorContainer: (stylesImport?.errorContainer || { alignItems: 'center', justifyContent: 'center', flex: 1, padding: 20 }),
-    errorText: (stylesImport?.errorText || { fontSize: 16, color: PALETTE.errorRed, textAlign: 'center', marginBottom: 15 }),
-    retryButton: (stylesImport?.retryButton || { backgroundColor: PALETTE.darkGreen, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20 }),
-    retryButtonText: (stylesImport?.retryButtonText || { color: PALETTE.white, fontSize: 16, fontFamily: 'Quicksand_700Bold', }),
-    emptyText: (stylesImport?.emptyText || { fontSize: 16, color: PALETTE.darkGrey, textAlign: 'center', marginTop: 50 }),
+        backgroundColor: PALETTE.mediumGreen,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        elevation: 2,
+    },
+    viewProfileText: {
+        marginLeft: 4,
+        fontSize: 14,
+        color: PALETTE.white,
+        fontWeight: '600',
+    },
+    statsGrid: {
+        paddingHorizontal: 16,
+        marginTop: 24,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    statCard: {
+        flex: 1,
+        aspectRatio: 1.1,
+        borderRadius: 16,
+        padding: 16,
+        marginHorizontal: 6,
+        elevation: 3,
+        shadowColor: PALETTE.cardShadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    clientsCard: {
+        backgroundColor: PALETTE.mediumGreen,
+    },
+    invitationsCard: {
+        backgroundColor: PALETTE.darkGreen, // ✅ Clearer color for pending
+    },
+    messagesCard: {
+        backgroundColor: PALETTE.lightOrange,
+    },
+    ratingCard: {
+        backgroundColor: PALETTE.lightGreen, // ✅ Using your palette instead of yellow
+    },
+    statIconContainer: {
+        position: 'relative',
+        marginBottom: 12,
+    },
+    notificationBadge: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        backgroundColor: PALETTE.errorRed,
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: PALETTE.white,
+    },
+    badgeText: {
+        color: PALETTE.white,
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    statNumber: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: PALETTE.white,
+        marginBottom: 4,
+    },
+    statLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: PALETTE.white,
+        textAlign: 'center',
+        opacity: 0.95,
+    },
 });

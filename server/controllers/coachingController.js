@@ -4,6 +4,7 @@ const admin = firebaseInstances.admin; // Needed for FieldValue
 const db = firebaseInstances.db;       // Firestore instance
 const FieldValue = admin.firestore.FieldValue; // Import FieldValue
 const { sendCoachRequestAcceptedNotification } = require('./notificationController');
+const { sendInvitationSentNotification, sendInvitationReceivedNotification, sendInvitationAcceptedNotification, sendInvitationDeclinedNotification, sendCoachSelectedNotification } = require('../services/notificationService');
 
 // Helper: Check Firebase DB readiness
 function checkFirebaseReady(res, action = "perform action") {
@@ -217,6 +218,19 @@ exports.selectCoach = async (req, res) => {
             transaction.update(requestDocRef, { status: 'selected' });
             transaction.update(coachDocRef, { clientIds: FieldValue.arrayUnion(userId) }); // Add user to coach's list
         });
+        
+        // ✅ SEND SELECTION NOTIFICATION TO COACH
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userData = userDoc.data();
+            const userName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || 'New Client';
+            
+            await sendCoachSelectedNotification(nutritionistId, userName);
+            console.log(`[CoachingController] Coach selected notification sent to coach ${nutritionistId}`);
+        } catch (notificationError) {
+            console.error('[CoachingController] Error sending selection notification:', notificationError);
+        }
+
         console.log(`CTRL: Coach ${nutritionistId} selected by ${userId}.`);
         res.status(200).json({ message: "Coach selected successfully." });
     } catch (error) {
@@ -252,6 +266,17 @@ exports.sendCoachRequest = async (req, res) => {
         const newRequestData = { nutritionistId, status: 'pending', requestTimestamp: FieldValue.serverTimestamp() };
         const docRef = await requestsCollectionRef.add(newRequestData);
         console.log(`CTRL: Coach request created: ${docRef.id} under user ${userId}`);
+        
+        // ✅ SEND INVITATION NOTIFICATION TO COACH
+        try {
+            const userName = `${userDocSnap.data()?.firstName || ''} ${userDocSnap.data()?.lastName || ''}`.trim() || 'New User';
+            
+            await sendInvitationSentNotification(nutritionistId, userName);
+            console.log(`[CoachingController] Invitation sent notification sent to coach ${nutritionistId}`);
+        } catch (notificationError) {
+            console.error('[CoachingController] Error sending invitation notification:', notificationError);
+        }
+        
         res.status(201).json({ message: "Request sent successfully.", requestId: docRef.id });
     } catch (error) {
         console.error(`CTRL Error: sending coach request from ${userId} to ${nutritionistId}:`, error);
@@ -499,17 +524,19 @@ exports.acceptRequest = async (req, res) => {
             acceptedTimestamp: FieldValue.serverTimestamp()
         });
 
-        // After request is accepted, send notification
-        const coachDoc = await db.collection('nutritionists').doc(coachId).get();
-        const coachData = coachDoc.data();
-        const coachName = `${coachData.firstName} ${coachData.lastName}`.trim();
+        // ✅ SEND ACCEPTANCE NOTIFICATION TO USER
+        try {
+            const coachDoc = await db.collection('nutritionists').doc(coachId).get();
+            const coachData = coachDoc.data();
+            const coachName = `${coachData?.firstName || ''} ${coachData?.lastName || ''}`.trim() || 'Your Coach';
+            
+            await sendInvitationAcceptedNotification(userId, coachName);
+            console.log(`[CoachingController] Invitation accepted notification sent to user ${userId}`);
+        } catch (notificationError) {
+            console.error('[CoachingController] Error sending acceptance notification:', notificationError);
+        }
         
-        await sendCoachRequestAcceptedNotification(userId, coachName);
-
-        console.log(`CTRL: Request ${requestId} from user ${userId} accepted by coach ${coachId}.`);
         res.status(200).json({ message: "Request accepted successfully." });
-        // TODO: Implement notification to the user
-
     } catch (error) {
         console.error(`CTRL Error: accepting request ${requestId} for user ${userId} by coach ${coachId}:`, error);
         if (error.code === 5 || error.message?.includes("not found")) return res.status(404).json({ message: "Request not found.", error: error.message });
@@ -543,10 +570,19 @@ exports.declineRequest = async (req, res) => {
             declinedTimestamp: FieldValue.serverTimestamp()
         });
 
-        console.log(`CTRL: Request ${requestId} from user ${userId} declined by coach ${coachId}.`);
-        res.status(200).json({ message: "Request declined successfully." });
-        // TODO: Implement notification to the user? (Optional)
+        // ✅ SEND DECLINE NOTIFICATION TO USER
+        try {
+            const coachDoc = await db.collection('nutritionists').doc(coachId).get();
+            const coachData = coachDoc.data();
+            const coachName = `${coachData?.firstName || ''} ${coachData?.lastName || ''}`.trim() || 'Coach';
+            
+            await sendInvitationDeclinedNotification(userId, coachName);
+            console.log(`[CoachingController] Invitation declined notification sent to user ${userId}`);
+        } catch (notificationError) {
+            console.error('[CoachingController] Error sending decline notification:', notificationError);
+        }
 
+        res.status(200).json({ message: "Request declined successfully." });
     } catch (error) {
         console.error(`CTRL Error: declining request ${requestId} for user ${userId} by coach ${coachId}:`, error);
         if (error.code === 5 || error.message?.includes("not found")) return res.status(404).json({ message: "Request not found.", error: error.message });

@@ -1,6 +1,7 @@
 // controllers/nutritionalProgramController.js
 const { Timestamp } = require('firebase-admin/firestore');
 const { firebaseInstances } = require('../config/firebase');
+const { sendNutritionPlanUpdatedNotification } = require('../services/notificationService');
 
 // Vérification initiale
 let db, admin, FieldValue;
@@ -60,23 +61,34 @@ const saveNutritionPlan = async (req, res) => {
     if (!weeklyPlan?.[selectedDay] || typeof weeklyPlan[selectedDay] !== 'object') return res.status(400).json({ message: `Data for ${selectedDay} missing/invalid.` });
     if (!FieldValue?.serverTimestamp) return res.status(500).json({ message: "Timestamp service error." });
 
-    const generalPlanData = { /* ... (comme avant) ... */
-        generalNotes: generalNotes ?? '', waterIntake: String(waterIntake ?? '2.5'), sleepRecommendation: sleepRecommendation ?? '7-9 hours',
-        coachLastUpdatedAt: FieldValue.serverTimestamp(), coachLastUpdatedBy: coachId,
+    const generalPlanData = {
+        generalNotes: generalNotes ?? '', 
+        waterIntake: String(waterIntake ?? '2.5'), 
+        sleepRecommendation: sleepRecommendation ?? '7-9 hours',
+        coachLastUpdatedAt: FieldValue.serverTimestamp(), 
+        coachLastUpdatedBy: coachId,
     };
+    
     const receivedDayData = weeklyPlan[selectedDay];
     const defaultDayState = createInitialDayState();
-    const dayDataToSave = { /* ... (construction comme avant) ... */
-        dailyWorkout: receivedDayData.dailyWorkout ?? defaultDayState.dailyWorkout, meals: {},
-        coachLastUpdatedAt: FieldValue.serverTimestamp(), coachLastUpdatedBy: coachId,
+    const dayDataToSave = {
+        dailyWorkout: receivedDayData.dailyWorkout ?? defaultDayState.dailyWorkout, 
+        meals: {},
+        coachLastUpdatedAt: FieldValue.serverTimestamp(), 
+        coachLastUpdatedBy: coachId,
     };
+    
     const MEAL_TIMES = ["Breakfast", "Lunch", "Dinner", "Snack"];
     MEAL_TIMES.forEach(meal => {
-        const receivedMeal = receivedDayData.meals?.[meal] || {}; const defaultMeal = defaultDayState.meals[meal];
+        const receivedMeal = receivedDayData.meals?.[meal] || {}; 
+        const defaultMeal = defaultDayState.meals[meal];
         dayDataToSave.meals[meal] = {
-            food: receivedMeal.food ?? defaultMeal.food, quantity: String(receivedMeal.quantity ?? defaultMeal.quantity),
-            unit: receivedMeal.unit ?? defaultMeal.unit, prepNotes: receivedMeal.prepNotes ?? defaultMeal.prepNotes,
-            timing: receivedMeal.timing ?? defaultMeal.timing, alternatives: receivedMeal.alternatives ?? defaultMeal.alternatives,
+            food: receivedMeal.food ?? defaultMeal.food, 
+            quantity: String(receivedMeal.quantity ?? defaultMeal.quantity),
+            unit: receivedMeal.unit ?? defaultMeal.unit, 
+            prepNotes: receivedMeal.prepNotes ?? defaultMeal.prepNotes,
+            timing: receivedMeal.timing ?? defaultMeal.timing, 
+            alternatives: receivedMeal.alternatives ?? defaultMeal.alternatives,
         };
     });
 
@@ -87,6 +99,23 @@ const saveNutritionPlan = async (req, res) => {
         batch.set(baseRef.doc(selectedDay), dayDataToSave, { merge: true });
         await batch.commit();
         console.log(`[Nutrition Controller] Plan updated: client ${clientId}, day ${selectedDay}, coach ${coachId}.`);
+        
+        // NEW: Send notification to client
+        try {
+            const coachData = await db.collection('nutritionists').doc(coachId).get();
+            const coachName = coachData.data()?.firstName || 'Your Coach';
+            
+            console.log(`📋 Triggering plan notification: ${coachName} -> ${clientId}`);
+            
+            await sendNutritionPlanUpdatedNotification(clientId, coachName);
+            
+            console.log(`✅ Plan update notification sent successfully`);
+            
+        } catch (notificationError) {
+            console.error('❌ Error sending plan notification:', notificationError);
+            // Don't fail the plan update if notification fails
+        }
+        
         res.status(200).json({ message: `Plan updated for ${selectedDay}.` });
     } catch (error) {
         console.error(`[Nutrition Controller] Error saving plan for ${clientId}, day ${selectedDay}:`, error);
@@ -189,7 +218,7 @@ const getClientDailyPlanView = async (req, res) => {
         const dayDataResult = dayDocSnap.exists ? dayDocSnap.data() : createInitialDayState();
         const defaultFullStructure = createInitialFullPlanState();
         const defaultDayStructure = defaultFullStructure.weeklyPlan[dayName];
-        const finalDayData = { /* ... (construction comme avant) ... */
+        const finalDayData = {
             dailyWorkout: dayDataResult.dailyWorkout ?? defaultDayStructure.dailyWorkout, meals: {}, completed: dayDataResult.completed ?? false,
             clientLastUpdatedAt: dayDataResult.clientLastUpdatedAt || null, coachLastUpdatedAt: dayDataResult.coachLastUpdatedAt || null, coachLastUpdatedBy: dayDataResult.coachLastUpdatedBy || null,
         };
@@ -197,7 +226,7 @@ const getClientDailyPlanView = async (req, res) => {
         MEAL_TIMES.forEach(meal => { const dbMeal = dayDataResult.meals?.[meal] || {}; const defaultMeal = defaultDayStructure.meals[meal];
             finalDayData.meals[meal] = { food: dbMeal.food ?? defaultMeal.food, quantity: String(dbMeal.quantity ?? defaultMeal.quantity), unit: dbMeal.unit ?? defaultMeal.unit, prepNotes: dbMeal.prepNotes ?? defaultMeal.prepNotes, timing: dbMeal.timing ?? defaultMeal.timing, alternatives: dbMeal.alternatives ?? defaultMeal.alternatives, };
         });
-        const planViewResponse = { /* ... (construction comme avant) ... */
+        const planViewResponse = {
              generalNotes: generalData.generalNotes ?? defaultFullStructure.generalNotes, waterIntake: String(generalData.waterIntake ?? fullDefaultStructure.waterIntake),
              sleepRecommendation: generalData.sleepRecommendation ?? fullDefaultStructure.sleepRecommendation, dayData: finalDayData, dayName: dayName,
              lastUpdatedAt: generalData.coachLastUpdatedAt || null, lastUpdatedBy: generalData.coachLastUpdatedBy || null,

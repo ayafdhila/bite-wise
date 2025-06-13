@@ -3,7 +3,7 @@ import PlanTemplate from './PlanTemplate';
 import Chatbot from './Chatbot';
 import Profile from './Profile';
 import Recipes from './recipes';
-import Notifications from './Notifications';
+import NotificationBadge from './NotificationBadge';
 import NotificationsScreen from './NotificationsScreen'; // Add this import
 import userSettings from './userSettings';
 import userReminders from './userReminders';
@@ -37,7 +37,7 @@ export default function PersonalNavigator(){
             <Stack.Screen name = 'RecipeDetail' component={RecipeDetail}/>
             <Stack.Screen name='Profile' component={Profile}/>
             <Stack.Screen name='Chatbot' component={Chatbot}/>
-            <Stack.Screen name='Notifications' component={Notifications}/>
+            <Stack.Screen name='NotificationBadge' component={NotificationBadge}/>
             <Stack.Screen name='NotificationsScreen' component={NotificationsScreen}/> 
             <Stack.Screen name = 'FindSpecialist' component={FindSpecialist}/>
             <Stack.Screen name='NutritionSection' component={NutritionSection}/>

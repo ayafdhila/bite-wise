@@ -1,291 +1,305 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-    registerForPushNotificationsAsync, 
-    updatePushToken, 
-    scheduleMotivationalNotifications,
-    scheduleMealReminders,
-    scheduleHydrationReminders,
-    scheduleLocalNotification,
-    sendCoachNotification,
-    sendAchievementNotification,
-    checkScheduledNotifications,
-    cancelAllNotifications,
-    getUserNotifications
-} from '../services/NotificationService';
-import { AuthContext } from '../components/AuthContext';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import { AuthContext } from './AuthContext';
+
+// Configure notification handling
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 const NotificationContext = createContext();
 
+// Export both useSimpleNotifications and useNotifications for compatibility
+export const useSimpleNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useSimpleNotifications must be used within NotificationProvider');
+  }
+  return context;
+};
+
+// KEEP THIS FOR COMPATIBILITY WITH HEADER.JS
 export const useNotifications = () => {
-    const context = useContext(NotificationContext);
-    if (!context) {
-        throw new Error('useNotifications must be used within a NotificationProvider');
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within NotificationProvider');
+  }
+  return context;
+};
+
+export const SimpleNotificationProvider = ({ children }) => {
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [expoPushToken, setExpoPushToken] = useState(null);
+  
+  const { user, getIdToken } = useContext(AuthContext);
+  const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000';
+
+  // Register for push notifications
+  const registerForPushNotifications = async () => {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('Push notification permissions not granted');
+        return null;
+      }
+
+      // Get the correct Expo project ID from app.json
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      
+      if (!projectId) {
+        console.error('No Expo project ID found in app config');
+        return null;
+      }
+
+      console.log('Using Expo project ID:', projectId);
+
+      const token = (await Notifications.getExpoPushTokenAsync({
+        projectId: projectId // ✅ Use the correct Expo project ID
+      })).data;
+      
+      console.log('Got Expo push token:', token);
+      
+      setExpoPushToken(token);
+      
+      // Save token to backend
+      if (user && token) {
+        await saveTokenToBackend(token);
+      }
+      
+      return token;
+    } catch (error) {
+      console.error('Error getting push token:', error);
+      return null;
     }
-    return context;
+  };
+
+  // Save push token to backend
+  const saveTokenToBackend = async (token) => {
+    try {
+      const authToken = await getIdToken();
+      if (!authToken) return;
+
+      const userType = user?.userType === 'Professional' ? 'coach' : 'user';
+      
+      const response = await fetch(`${API_BASE_URL}/api/notifications/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ 
+          token, 
+          userType 
+        }),
+      });
+
+      if (response.ok) {
+        console.log('✅ Push token saved to backend');
+      } else {
+        console.error('❌ Failed to save push token to backend');
+      }
+    } catch (error) {
+      console.error('Error saving push token:', error);
+    }
+  };
+
+  // Load notifications from local storage
+  const loadLocalNotifications = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('simple_notifications');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setNotifications(parsed);
+        const unread = parsed.filter(n => !n.read).length;
+        setUnreadCount(unread);
+      }
+    } catch (error) {
+      console.error('Error loading local notifications:', error);
+    }
+  };
+
+  // Save notifications to local storage
+  const saveLocalNotifications = async (notifications) => {
+    try {
+      await AsyncStorage.setItem('simple_notifications', JSON.stringify(notifications));
+    } catch (error) {
+      console.error('Error saving local notifications:', error);
+    }
+  };
+
+  // Add new notification
+  const addNotification = (notification) => {
+    const newNotification = {
+      id: Date.now().toString(),
+      title: notification.title || 'Notification',
+      body: notification.body || '',
+      type: notification.type || 'general',
+      read: false,
+      timestamp: new Date(),
+      data: notification.data || {},
+      ...notification
+    };
+
+    setNotifications(prev => {
+      const updated = [newNotification, ...prev].slice(0, 50); // Keep only 50 most recent
+      saveLocalNotifications(updated);
+      return updated;
+    });
+
+    setUnreadCount(prev => prev + 1);
+  };
+
+  // Mark notification as read
+  const markAsRead = (notificationId) => {
+    setNotifications(prev => {
+      const updated = prev.map(n => 
+        n.id === notificationId ? { ...n, read: true } : n
+      );
+      saveLocalNotifications(updated);
+      return updated;
+    });
+
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  // Mark all as read
+  const markAllAsRead = () => {
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, read: true }));
+      saveLocalNotifications(updated);
+      return updated;
+    });
+    
+    setUnreadCount(0);
+  };
+
+  // Delete notification
+  const deleteNotification = (notificationId) => {
+    setNotifications(prev => {
+      const updated = prev.filter(n => n.id !== notificationId);
+      saveLocalNotifications(updated);
+      return updated;
+    });
+
+    // Update unread count
+    const notification = notifications.find(n => n.id === notificationId);
+    if (notification && !notification.read) {
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  // Clear all notifications
+  const clearAllNotifications = async () => {
+    setNotifications([]);
+    setUnreadCount(0);
+    await AsyncStorage.removeItem('simple_notifications');
+  };
+
+  // Send test notification to backend
+  const sendTestNotification = async () => {
+    try {
+      const authToken = await getIdToken();
+      if (!authToken) {
+        console.log('No auth token available');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/notifications/test`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        console.log('✅ Test notification sent');
+        // Add local test notification
+        addNotification({
+          title: '🧪 Test Notification',
+          body: 'This is a test notification from the app!',
+          type: 'test'
+        });
+      } else {
+        console.error('❌ Failed to send test notification');
+      }
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+    }
+  };
+
+  // Initialize on user login
+  useEffect(() => {
+    if (user) {
+      loadLocalNotifications();
+      registerForPushNotifications();
+    } else {
+      // Clear notifications on logout
+      setNotifications([]);
+      setUnreadCount(0);
+      setExpoPushToken(null);
+    }
+  }, [user]);
+
+  // Listen for incoming notifications
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('📱 Notification received:', notification);
+      
+      addNotification({
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+        type: notification.request.content.data?.type || 'push',
+        data: notification.request.content.data || {}
+      });
+    });
+
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('📱 Notification response:', response);
+      // Handle notification tap here if needed
+    });
+
+    return () => {
+      subscription.remove();
+      responseSubscription.remove();
+    };
+  }, []);
+
+  const value = {
+    notifications,
+    unreadCount,
+    isLoading,
+    expoPushToken,
+    addNotification,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAllNotifications,
+    sendTestNotification,
+    registerForPushNotifications
+  };
+
+  return (
+    <NotificationContext.Provider value={value}>
+      {children}
+    </NotificationContext.Provider>
+  );
 };
 
-export const NotificationProvider = ({ children }) => {
-    const { user, getIdToken } = useContext(AuthContext);
-    const [expoPushToken, setExpoPushToken] = useState('');
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [notificationMode, setNotificationMode] = useState('unknown');
-    const [isLoading, setIsLoading] = useState(false);
-
-    // Load notifications from local storage
-    const loadLocalNotifications = async () => {
-        try {
-            if (!user?.uid) return;
-            
-            const stored = await AsyncStorage.getItem(`notifications_${user.uid}`);
-            if (stored) {
-                const parsedNotifications = JSON.parse(stored);
-                if (Array.isArray(parsedNotifications)) {
-                    setNotifications(parsedNotifications);
-                    const unread = parsedNotifications.filter(notif => !notif.read).length;
-                    setUnreadCount(unread);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading local notifications:', error);
-        }
-    };
-
-    // Save notifications to local storage
-    const saveLocalNotifications = async (notificationsList) => {
-        try {
-            if (!user?.uid) return;
-            
-            await AsyncStorage.setItem(
-                `notifications_${user.uid}`, 
-                JSON.stringify(notificationsList)
-            );
-        } catch (error) {
-            console.error('Error saving local notifications:', error);
-        }
-    };
-
-    // Fetch notifications from backend
-    const fetchBackendNotifications = async () => {
-        try {
-            if (!user?.uid) return;
-            
-            setIsLoading(true);
-            const authToken = await getIdToken();
-            
-            if (authToken) {
-                const result = await getUserNotifications(authToken);
-                console.log('Received from backend:', result); // Debug log
-                
-                // Handle the response - your backend returns { notifications: [...] }
-                let backendNotifications = [];
-                if (result && Array.isArray(result.notifications)) {
-                    backendNotifications = result.notifications;
-                } else if (Array.isArray(result)) {
-                    backendNotifications = result;
-                } else {
-                    console.log('No backend notifications found or invalid format');
-                    return; // Early return instead of continuing with undefined
-                }
-
-                // Convert backend notifications to local format
-                const formattedNotifications = backendNotifications.map(notif => ({
-                    id: notif.id || Date.now().toString(),
-                    title: notif.title || 'Notification',
-                    body: notif.body || notif.message || '',
-                    data: notif.data || {},
-                    timestamp: notif.timestamp ? new Date(notif.timestamp) : new Date(),
-                    read: notif.read || false,
-                    source: 'backend'
-                }));
-
-                // Ensure notifications is always an array before filtering
-                const currentNotifications = Array.isArray(notifications) ? notifications : [];
-                
-                // Merge with existing local notifications (remove old backend ones first)
-                const existingLocal = currentNotifications.filter(notif => notif.source !== 'backend');
-                const allNotifications = [...formattedNotifications, ...existingLocal]
-                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-                setNotifications(allNotifications);
-                const unread = allNotifications.filter(notif => !notif.read).length;
-                setUnreadCount(unread);
-                
-                // Save to local storage
-                await saveLocalNotifications(allNotifications);
-                
-                console.log(`✅ Loaded ${formattedNotifications.length} backend notifications`);
-            }
-        } catch (error) {
-            console.error('❌ Error fetching backend notifications:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!user) return;
-
-        const setupNotifications = async () => {
-            try {
-                console.log('🔔 Setting up notifications...');
-                
-                // Load local notifications first
-                await loadLocalNotifications();
-                
-                const token = await registerForPushNotificationsAsync();
-                
-                if (token && token !== 'local-only-mode') {
-                    setExpoPushToken(token);
-                    setNotificationMode('push');
-                    console.log('📱 Push notifications enabled');
-                    
-                    const authToken = await getIdToken();
-                    if (authToken) {
-                        await updatePushToken(token, authToken);
-                    }
-                } else {
-                    setNotificationMode('local-only');
-                    console.log('📲 Using local notifications only');
-                }
-
-                // Schedule all notification types
-                await scheduleMotivationalNotifications();
-                await scheduleMealReminders();
-                await scheduleHydrationReminders();
-                
-                // Try to fetch backend notifications
-                await fetchBackendNotifications();
-                
-                // Check what was scheduled
-                await checkScheduledNotifications();
-                
-                console.log('✅ All notifications set up successfully');
-
-            } catch (error) {
-                console.error('❌ Error setting up notifications:', error);
-                setNotificationMode('local-only');
-            }
-        };
-
-        setupNotifications();
-
-        // Listen for incoming notifications
-        const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-            console.log('📥 Notification received:', notification);
-            
-            const newNotification = {
-                id: notification.request.identifier,
-                title: notification.request.content.title,
-                body: notification.request.content.body,
-                data: notification.request.content.data,
-                timestamp: new Date(),
-                read: false,
-                source: 'local'
-            };
-            
-            const updatedNotifications = [newNotification, ...notifications];
-            setNotifications(updatedNotifications);
-            setUnreadCount(prev => prev + 1);
-            
-            // Save to local storage
-            saveLocalNotifications(updatedNotifications);
-        });
-
-        // Listen for notification taps
-        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log('👆 Notification tapped:', response);
-            // Handle navigation based on notification type
-        });
-
-        return () => {
-            notificationListener && Notifications.removeNotificationSubscription(notificationListener);
-            responseListener && Notifications.removeNotificationSubscription(responseListener);
-        };
-    }, [user]);
-
-    const addNotification = async (notification) => {
-        const newNotification = {
-            id: Date.now().toString(),
-            timestamp: new Date(),
-            read: false,
-            source: 'local',
-            ...notification
-        };
-
-        const updatedNotifications = [newNotification, ...notifications];
-        setNotifications(updatedNotifications);
-        setUnreadCount(prev => prev + 1);
-        
-        // Save to local storage
-        await saveLocalNotifications(updatedNotifications);
-    };
-
-    const markAsRead = async (notificationId) => {
-        const updatedNotifications = notifications.map(notif =>
-            notif.id === notificationId 
-                ? { ...notif, read: true }
-                : notif
-        );
-        
-        setNotifications(updatedNotifications);
-        const newUnreadCount = updatedNotifications.filter(notif => !notif.read).length;
-        setUnreadCount(newUnreadCount);
-        
-        // Save to local storage
-        await saveLocalNotifications(updatedNotifications);
-    };
-
-    const markAllAsRead = async () => {
-        const updatedNotifications = notifications.map(notif => ({ ...notif, read: true }));
-        setNotifications(updatedNotifications);
-        setUnreadCount(0);
-        
-        // Save to local storage
-        await saveLocalNotifications(updatedNotifications);
-    };
-
-    const clearAllNotifications = async () => {
-        setNotifications([]);
-        setUnreadCount(0);
-        
-        // Clear from local storage
-        if (user?.uid) {
-            await AsyncStorage.removeItem(`notifications_${user.uid}`);
-        }
-        
-        // Cancel scheduled notifications
-        await cancelAllNotifications();
-    };
-
-    const refreshNotifications = async () => {
-        await fetchBackendNotifications();
-    };
-
-    const value = {
-        expoPushToken,
-        notifications,
-        unreadCount,
-        notificationMode,
-        isLoading,
-        markAsRead,
-        markAllAsRead,
-        clearAllNotifications,
-        addNotification,
-        refreshNotifications,
-        setNotifications,
-        setUnreadCount,
-        sendLocalNotification: scheduleLocalNotification,
-        sendCoachMessage: sendCoachNotification,
-        sendAchievement: sendAchievementNotification,
-        checkScheduled: checkScheduledNotifications
-    };
-
-    return (
-        <NotificationContext.Provider value={value}>
-            {children}
-        </NotificationContext.Provider>
-    );
-};
+// Export both provider names for compatibility
+export const NotificationProvider = SimpleNotificationProvider;
+export default NotificationContext;

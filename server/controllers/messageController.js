@@ -3,7 +3,7 @@ const { firebaseInstances } = require('../config/firebase'); // Adjust path if n
 const admin = firebaseInstances.admin; // Needed for FieldValue
 const db = firebaseInstances.db;       // Firestore instance
 const FieldValue = admin.firestore.FieldValue; // Import FieldValue
-const { sendNewMessageNotification, sendNewMessageNotificationToCoach } = require('./notificationController');
+const { sendNewMessageNotification } = require('../services/notificationService');
 
 // Helper: Check Firebase DB readiness
 function checkFirebaseReady(res, action = "perform action") {
@@ -196,45 +196,75 @@ exports.sendChatMessage = async (req, res) => {
         });
         console.log(`CTRL: sendChatMessage - Updated parent chat ${chatId} metadata. Incremented ${unreadFieldToIncrement}.`);
 
-        // Send notification after message is sent successfully
-        if (receiverId && text) {
-            // Determine if receiver is a coach or user
-            const receiverDoc = await db.collection('users').doc(receiverId).get();
-            let senderName = 'Someone';
-            let isReceiverCoach = false;
+        // ✅ IMPROVED: Better notification system with error handling
+        try {
+            console.log(`🔍 DEBUG: Starting message notification process...`);
             
-            if (receiverDoc.exists) {
-                // Receiver is a regular user
-                const receiverData = receiverDoc.data();
-                isReceiverCoach = false;
-            } else {
-                // Check if receiver is a coach
-                const coachDoc = await db.collection('nutritionists').doc(receiverId).get();
-                if (coachDoc.exists) {
-                    isReceiverCoach = true;
-                }
+            // Check if the function is available
+            console.log(`🔍 DEBUG: sendNewMessageNotification type: ${typeof sendNewMessageNotification}`);
+            
+            if (typeof sendNewMessageNotification !== 'function') {
+                console.error(`❌ ERROR: sendNewMessageNotification is not a function!`);
+                console.log(`🔍 DEBUG: Available exports:`, Object.keys(require('../services/notificationService')));
+                throw new Error('sendNewMessageNotification is not available');
             }
             
-            // Get sender info
-            const senderDoc = await db.collection('users').doc(senderId).get();
+            // Get sender info for notification
+            let senderName = 'Someone';
+            let senderDoc = await db.collection('users').doc(senderId).get();
+            
+            console.log(`🔍 DEBUG: Checking if sender ${senderId} is a user...`);
+            
             if (senderDoc.exists) {
                 const senderData = senderDoc.data();
-                senderName = `${senderData.firstName} ${senderData.lastName}`.trim() || senderData.userName || 'User';
+                senderName = `${senderData.firstName} ${senderData.lastName}`.trim() || 'Client';
+                console.log(`🔍 DEBUG: Sender is a user: ${senderName}`);
             } else {
-                // Sender is a coach
-                const nutriDoc = await db.collection('nutritionists').doc(senderId).get();
-                if (nutriDoc.exists) {
-                    const nutriData = nutriDoc.data();
-                    senderName = `Dr. ${nutriData.firstName} ${nutriData.lastName}`.trim() || 'Your Coach';
+                console.log(`🔍 DEBUG: Sender not found in users, checking nutritionists...`);
+                senderDoc = await db.collection('nutritionists').doc(senderId).get();
+                if (senderDoc.exists) {
+                    const senderData = senderDoc.data();
+                    senderName = `${senderData.firstName} ${senderData.lastName}`.trim() || 'Your Coach';
+                    console.log(`🔍 DEBUG: Sender is a coach: ${senderName}`);
+                } else {
+                    console.log(`🔍 DEBUG: ❌ Sender not found in either collection!`);
                 }
             }
             
-            // Send notification to the appropriate collection
-            if (isReceiverCoach) {
-                await sendNewMessageNotificationToCoach(receiverId, senderName, text);
+            // Determine receiver type
+            let receiverType = 'user';
+            console.log(`🔍 DEBUG: Checking if receiver ${receiverId} is a coach...`);
+            const receiverDoc = await db.collection('nutritionists').doc(receiverId).get();
+            if (receiverDoc.exists) {
+                receiverType = 'coach';
+                console.log(`🔍 DEBUG: Receiver is a coach`);
             } else {
-                await sendNewMessageNotification(receiverId, senderName, text);
+                console.log(`🔍 DEBUG: Receiver is a user`);
             }
+            
+            console.log(`📧 Triggering message notification: ${senderName} -> ${receiverId} (${receiverType})`);
+            console.log(`🔍 DEBUG: Message preview: "${text.substring(0, 50)}..."`);
+            
+            // Send notification using the notification service
+            const notificationResult = await sendNewMessageNotification(
+                receiverId, 
+                senderName, 
+                receiverType, 
+                text.substring(0, 100)
+            );
+            
+            console.log(`🔍 DEBUG: Notification result:`, notificationResult);
+            
+            if (notificationResult && notificationResult.success) {
+                console.log(`✅ Message notification sent successfully`);
+            } else {
+                console.error(`❌ Message notification failed:`, notificationResult);
+            }
+            
+        } catch (notificationError) {
+            console.error('❌ Error sending message notification:', notificationError);
+            console.error('❌ Stack trace:', notificationError.stack);
+            // Don't fail the message send if notification fails
         }
 
         res.status(201).json({ message: "Message sent successfully.", messageId: newMessageRef.id });

@@ -5,8 +5,6 @@ import type {
   NutritionData,
 } from "@/types/domain";
 import { EXPO_PUBLIC_GEMINI_API_KEY } from "@env";
-
-// Step 2.2: Enhanced processing interfaces
 interface ProcessingMetrics {
   responseTime: number;
   parseTime: number;
@@ -21,23 +19,17 @@ interface ValidationResult {
 }
 
 interface QualityAssessment {
-  overallScore: number; // 0-1 scale
+  overallScore: number; 
   reliability: "high" | "medium" | "low";
   needsReview: boolean;
   recommendations: string[];
 }
 
-/**
- * Service class for interacting with the Google Gemini Vision API to analyze food images.
- * It handles API key management, request construction, response parsing, error handling,
- * quality assessment, and retry logic.
- */
 export class GeminiVisionService {
   private apiKey: string;
   private baseUrl =
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
 
-  // Step 2.2: Processing metrics tracking
   private processingMetrics: ProcessingMetrics = {
     responseTime: 0,
     parseTime: 0,
@@ -45,12 +37,6 @@ export class GeminiVisionService {
     totalProcessingTime: 0,
   };
 
-  /**
-   * Constructs an instance of the GeminiVisionService.
-   * @param {string} [apiKey] - Optional API key to use. If not provided, the service
-   * attempts to load the key from the `EXPO_PUBLIC_GEMINI_API_KEY` environment variable.
-   * @throws {Error} If the API key is not found or provided.
-   */
   constructor(apiKey?: string) {
     if (apiKey) {
       this.apiKey = apiKey;
@@ -66,22 +52,16 @@ export class GeminiVisionService {
     }
 
     if (!this.apiKey) {
-      // This check is somewhat redundant if the above logic is correct but serves as a final guard.
+
       console.error(
         "API key is not set. This should not happen if loaded correctly from env or provided to constructor."
       );
       throw new Error("API_KEY_NOT_SET");
     }
   }
-  /**
-   * Analyzes a food image using the Gemini Vision API.
-   * This is the primary method for a single analysis attempt without automatic retries.
-   * @param {ImageData} image - The image data to analyze, including a base64 representation.
-   * @returns {Promise<FoodAnalysisResult>} A promise that resolves with the food analysis result.
-   * @throws {Error} If the API key is not configured, image data is invalid, or an API error occurs.
-   */
+
   async analyzeFoodImage(image: ImageData): Promise<FoodAnalysisResult> {
-    // Step 2.2: Start processing metrics tracking
+
     const startTime = Date.now();
 
     if (!this.apiKey) {
@@ -94,12 +74,11 @@ export class GeminiVisionService {
     }
 
     try {
-      // Step 2.2: Track API response time
+   
       const apiStartTime = Date.now();
       const response = await this.callGeminiAPI(image);
       this.processingMetrics.responseTime = Date.now() - apiStartTime;
 
-      // Assuming the API directly returns the structured JSON text in the first part
       if (
         !response.candidates ||
         !response.candidates[0] ||
@@ -112,26 +91,23 @@ export class GeminiVisionService {
         throw new Error("Failed to parse API response: Invalid structure.");
       }
 
-      // Step 2.2: Track parsing and validation time
       const parseStartTime = Date.now();
       const result = this.parseResponseText(
         response.candidates[0].content.parts[0].text
       );
       this.processingMetrics.parseTime = Date.now() - parseStartTime;
 
-      // Step 2.2: Enhanced validation and quality assessment
       const validationStartTime = Date.now();
       const qualityAssessment = this.assessResponseQuality(result);
       this.processingMetrics.validationTime = Date.now() - validationStartTime;
       this.processingMetrics.totalProcessingTime = Date.now() - startTime;
 
-      // Step 2.2: Log processing metrics for monitoring
       this.logProcessingMetrics(qualityAssessment);
 
       return result;
     } catch (error: any) {
       console.error("Gemini API error:", error);
-      // Check if it's an HTTP error from fetch
+
       if (error.response) {
         const errorData = await error.response.json();
         console.error("API Error Response Data:", errorData);
@@ -155,21 +131,7 @@ export class GeminiVisionService {
           ],
         },
       ],
-      // Optional: Add generationConfig if needed
-      // generationConfig: {
-      //   temperature: 0.4,
-      //   topK: 32,
-      //   topP: 1,
-      //   maxOutputTokens: 4096,
-      //   stopSequences: [],
-      // },
-      // Optional: Add safetySettings if needed
-      // safetySettings: [
-      //   { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-      //   { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-      //   { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-      //   { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-      // ],
+  
     };
 
     const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
@@ -181,11 +143,10 @@ export class GeminiVisionService {
     });
 
     if (!response.ok) {
-      // Throw an error object that includes the response for more detailed handling
       const error: any = new Error(
         `API request failed with status ${response.status}`
       );
-      error.response = response; // Attach the full response
+      error.response = response; 
       throw error;
     }
 
@@ -194,12 +155,12 @@ export class GeminiVisionService {
   private parseResponseText(responseText: string): FoodAnalysisResult {
     let jsonString = responseText;
     try {
-      // Attempt to extract JSON from within ```json ... ``` fences
+
       const markdownMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
       if (markdownMatch && markdownMatch[1]) {
         jsonString = markdownMatch[1];
       } else {
-        // If no markdown fences, try to find the main JSON object
+  
         const firstBrace = responseText.indexOf("{");
         const lastBrace = responseText.lastIndexOf("}");
         if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
@@ -219,10 +180,8 @@ export class GeminiVisionService {
 
       const content = JSON.parse(jsonString);
 
-      // Enhanced validation for new structure
       this.validateEnhancedResponse(content);
 
-      // Process per-item nutrition and calculate total
       let totalNutrition: NutritionData = {
         calories: 0,
         fat: 0,
@@ -260,13 +219,10 @@ export class GeminiVisionService {
           confidence: food.confidence || 0,
           category: food.category,
           preparationMethod: food.preparationMethod,
-          nutrition: itemNutrition, // Store per-item nutrition
+          nutrition: itemNutrition, 
         };
       });
 
-      // Use AI's top-level nutrition if provided and seems valid, otherwise use summed
-      // For now, let's trust the AI's sum if it passes basic validation,
-      // but we have the calculated sum as a backup or for more complex scenarios later.
       const aiTotalNutrition = content.nutrition;
       const finalTotalNutrition =
         aiTotalNutrition && typeof aiTotalNutrition.calories === "number"
@@ -279,9 +235,8 @@ export class GeminiVisionService {
               sugar: aiTotalNutrition.sugar || 0,
               sodium: aiTotalNutrition.sodium || 0,
             }
-          : totalNutrition; // Fallback to summed if AI total is missing/invalid
+          : totalNutrition; 
 
-      // Map to FoodAnalysisResult type with enhanced structure
       return {
         foods: processedFoods,
         nutritionPerServing: finalTotalNutrition,
@@ -316,31 +271,23 @@ export class GeminiVisionService {
         jsonString
       );
       console.error(`Parsing Error: ${error.message}`);
-
-      // Return fallback result for better error handling
       return this.createFallbackResult(error.message);
     }
   }
 
   private validateEnhancedResponse(content: any): void {
-    // Basic structure validation
     if (!content || typeof content !== "object") {
       throw new Error("Response content is not a valid object");
     }
 
-    // Validate required arrays
     if (!content.foods || !Array.isArray(content.foods)) {
       console.warn("Foods array missing or invalid, using empty array");
       content.foods = [];
     }
-
-    // Validate nutrition object
     if (!content.nutrition || typeof content.nutrition !== "object") {
       console.warn("Nutrition object missing or invalid, using defaults");
       content.nutrition = {};
     }
-
-    // Validate confidence metrics
     if (
       !content.confidenceMetrics ||
       typeof content.confidenceMetrics !== "object"
@@ -348,15 +295,12 @@ export class GeminiVisionService {
       console.warn("Confidence metrics missing or invalid, using defaults");
       content.confidenceMetrics = {};
     }
-
-    // Validate image quality
     if (!content.imageQuality || typeof content.imageQuality !== "object") {
       console.warn("Image quality missing or invalid, using defaults");
       content.imageQuality = {};
     }
   }
   private createFallbackResult(errorMessage: string): FoodAnalysisResult {
-    // Enhanced fallback with better error context
     const isCameraError =
       errorMessage.toLowerCase().includes("camera") ||
       errorMessage.toLowerCase().includes("image");
@@ -375,7 +319,7 @@ export class GeminiVisionService {
     }
 
     return {
-      foods: [], // Ensure FoodItems here would also have default nutrition if any were added
+      foods: [], 
       nutritionPerServing: {
         calories: 0,
         fat: 0,
@@ -404,15 +348,13 @@ export class GeminiVisionService {
   }
 
   private handleApiError(error: any): ApiError {
-    // Log the full error for debugging
     console.error("Handling API Error:", JSON.stringify(error, null, 2));
 
     let code = "UNKNOWN_ERROR";
     let message = "An unexpected error occurred during API interaction.";
-    const retryable = true; // Default to true, can be overridden
+    const retryable = true; 
 
     if (error.status) {
-      // HTTP errors from fetch
       message = `API Error (${error.status}): ${
         error.message || "Failed to fetch"
       }`;
@@ -432,7 +374,6 @@ export class GeminiVisionService {
         message = "Gemini API server error. Please try again later.";
       }
     } else if (error.message) {
-      // Other errors (network, parsing, etc.)
       message = error.message;
       if (error.message.toLowerCase().includes("quota")) {
         code = "QUOTA_EXCEEDED";
@@ -446,9 +387,7 @@ export class GeminiVisionService {
     return { code, message, retryable };
   }
 
-  // Helper method to prepare image for API
   private prepareImageData(image: ImageData) {
-    // Remove data URI prefix if it exists (e.g., "data:image/jpeg;base64,")
     const base64Data = image.base64?.startsWith("data:image")
       ? image.base64.substring(image.base64.indexOf(",") + 1)
       : image.base64;
@@ -460,7 +399,6 @@ export class GeminiVisionService {
       },
     };
   }
-  // Helper method to create the prompt for food analysis
   private createFoodAnalysisPrompt(): string {
     return `
       You are an expert nutritionist and food analyst. Analyze this image with comprehensive detail and provide a structured JSON response.
@@ -543,21 +481,19 @@ export class GeminiVisionService {
     `;
   }
 
-  // Step 2.2: Enhanced validation and quality assessment methods
   private assessResponseQuality(result: FoodAnalysisResult): QualityAssessment {
     let score = 0;
     const recommendations: string[] = [];
     let issueCount = 0;
 
-    // Check image quality metrics
     const avgImageQuality =
       (result.imageQuality.clarity +
         result.imageQuality.lighting +
-        (1 - result.imageQuality.obstructions) + // Invert obstructions (less is better)
+        (1 - result.imageQuality.obstructions) +
         result.imageQuality.overall) /
       4;
 
-    score += avgImageQuality * 0.3; // 30% weight for image quality
+    score += avgImageQuality * 0.3; 
 
     if (avgImageQuality < 0.5) {
       recommendations.push(
@@ -566,7 +502,6 @@ export class GeminiVisionService {
       issueCount++;
     }
 
-    // Check confidence metrics
     const avgConfidence =
       (result.confidenceMetrics.foodIdentification +
         result.confidenceMetrics.ingredientAccuracy +
@@ -574,34 +509,31 @@ export class GeminiVisionService {
         result.confidenceMetrics.nutritionCalculation) /
       4;
 
-    score += avgConfidence * 0.4; // 40% weight for confidence
+    score += avgConfidence * 0.4; 
 
     if (avgConfidence < 0.6) {
       recommendations.push("AI confidence is low - consider manual review");
       issueCount++;
     }
 
-    // Check nutrition data reasonableness
     const nutritionValidation = this.validateNutritionReasonableness(
       result.nutritionPerServing
     );
-    score += nutritionValidation.score * 0.2; // 20% weight for nutrition validation
+    score += nutritionValidation.score * 0.2; 
 
     if (!nutritionValidation.isReasonable) {
       recommendations.push(...nutritionValidation.issues);
       issueCount++;
     }
 
-    // Check food identification quality
     const foodValidation = this.validateFoodIdentification(result.foods);
-    score += foodValidation.score * 0.1; // 10% weight for food validation
+    score += foodValidation.score * 0.1; 
 
     if (!foodValidation.isValid) {
       recommendations.push(...foodValidation.issues);
       issueCount++;
     }
 
-    // Determine reliability level
     let reliability: "high" | "medium" | "low";
     if (score >= 0.8 && issueCount === 0) {
       reliability = "high";
@@ -627,7 +559,6 @@ export class GeminiVisionService {
     const issues: string[] = [];
     let score = 1.0;
 
-    // Check for unreasonable values
     if (nutrition.calories < 0 || nutrition.calories > 2000) {
       issues.push("Calorie count seems unrealistic");
       score -= 0.3;
@@ -698,7 +629,7 @@ export class GeminiVisionService {
   }
 
   private logProcessingMetrics(qualityAssessment: QualityAssessment): void {
-    // Log processing performance for monitoring
+ 
     console.log("=== Food Analysis Processing Metrics ===");
     console.log(`Response Time: ${this.processingMetrics.responseTime}ms`);
     console.log(`Parse Time: ${this.processingMetrics.parseTime}ms`);
@@ -716,7 +647,7 @@ export class GeminiVisionService {
       );
     }
 
-    // Reset metrics for next analysis
+  
     this.processingMetrics = {
       responseTime: 0,
       parseTime: 0,
@@ -725,7 +656,7 @@ export class GeminiVisionService {
     };
   }
 
-  //  Enhanced error recovery with retry logic
+
   private async retryAnalysis(
     image: ImageData,
     attempt: number = 1,
@@ -740,7 +671,6 @@ export class GeminiVisionService {
         console.log(
           `Retrying analysis (attempt ${attempt + 1}/${maxRetries + 1})...`
         );
-        // Add exponential backoff
         await new Promise((resolve) =>
           setTimeout(resolve, Math.pow(2, attempt) * 1000)
         );
@@ -752,7 +682,7 @@ export class GeminiVisionService {
   }
 
   private isRetryableError(error: any): boolean {
-    // Check if error is retryable based on error type
+ 
     const retryableCodes = ["NETWORK_ERROR", "SERVER_ERROR", "QUOTA_EXCEEDED"];
     return (
       retryableCodes.some((code) => error.message?.includes(code)) ||
@@ -762,15 +692,6 @@ export class GeminiVisionService {
     );
   }
 
-  // Public methods for enhanced functionality
-
-  /**
-   * Analyzes a food image with built-in retry logic for transient errors.
-   * @param {ImageData} image - The image data to analyze.
-   * @param {number} [maxRetries=2] - The maximum number of retry attempts.
-   * @returns {Promise<FoodAnalysisResult>} A promise that resolves with the food analysis result.
-   * @throws {Error} If analysis fails after all retry attempts.
-   */
   async analyzeFoodImageWithRetry(
     image: ImageData,
     maxRetries: number = 2
@@ -778,21 +699,10 @@ export class GeminiVisionService {
     return this.retryAnalysis(image, 1, maxRetries);
   }
 
-  /**
-   * Retrieves the processing metrics from the last `analyzeFoodImage` call.
-   * Note: Metrics are reset after each call to `logProcessingMetrics` (which is internal to `analyzeFoodImage`).
-   * @returns {ProcessingMetrics} The last recorded processing metrics.
-   */
   getLastProcessingMetrics(): ProcessingMetrics {
     return { ...this.processingMetrics };
   }
 
-  /**
-   * Validates an existing `FoodAnalysisResult` object and provides a quality assessment.
-   * This can be used to assess results obtained from other sources or previous analyses.
-   * @param {FoodAnalysisResult} result - The food analysis result to validate.
-   * @returns {QualityAssessment} The quality assessment for the provided result.
-   */
   validateAnalysisResult(result: FoodAnalysisResult): QualityAssessment {
     return this.assessResponseQuality(result);
   }

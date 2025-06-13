@@ -3,7 +3,7 @@ import React from "react";
 import styles from "./Styles";
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useNotifications } from './NotificationContext';
+import { useSimpleNotifications } from './NotificationContext';
 
 export default function Header({
   subtitle, 
@@ -14,7 +14,7 @@ export default function Header({
   onRightIconPress
 }) {
   const navigation = useNavigation();
-  const { unreadCount } = useNotifications();
+  const { unreadCount } = useSimpleNotifications();
   
   const handleBackPress = () => {
     if (onBackPress) {
@@ -58,7 +58,7 @@ export default function Header({
       <View style={styles.bottomRow}>
         {/* Show back button conditionally */}
         {showBackButton && (
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backHButton}>
             <Ionicons name="arrow-back" size={24} color="#2E4A32" />
           </TouchableOpacity>
         )}

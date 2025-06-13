@@ -1,7 +1,7 @@
 // --- START OF FILE TabNavigation.js ---
 
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from './AuthContext';

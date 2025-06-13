@@ -112,7 +112,6 @@ export default function UserChatScreen() {
     // --- Send Message Handler ---
     const handleSend = useCallback(async () => {
         const textToSend = newMessageText.trim();
-        // Check all required IDs
         if (!textToSend || !userId || !coachId || !chatId) {
             console.log("Send Message Error: Missing data", { textToSend, userId, coachId, chatId });
             if (!coachId) Alert.alert("Error", "Cannot send message. Coach information missing.");
@@ -122,41 +121,43 @@ export default function UserChatScreen() {
         setIsSending(true);
         setError(null);
 
-        const messagesRef = collection(db, 'chats', chatId, 'messages');
-        // Ref to parent chat doc needed ONLY if updating via client (not recommended)
-        // const chatDocRef = doc(db, 'chats', chatId);
-
         try {
-            // Prepare message data with correct sender/receiver
-            const messageData = {
-                senderId: userId,   // USER is sending
-                receiverId: coachId, // COACH is receiving
-                text: textToSend,
-                timestamp: serverTimestamp(),
-            };
+            // ✅ FIXED: Call your API endpoint instead of direct Firestore
+            const token = await getIdToken();
+            if (!token) {
+                throw new Error('Authentication required');
+            }
 
-            // *** ONLY add the message document ***
-            await addDoc(messagesRef, messageData);
-            console.log(`UserChatScreen: Message sent by user ${userId}.`);
+            const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.16:3000';
+            
+            const response = await fetch(`${API_BASE_URL}/messages/${chatId}/send`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: textToSend,
+                    receiverId: coachId
+                })
+            });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to send message');
+            }
+
+            console.log(`UserChatScreen: Message sent by user ${userId} via API.`);
             setNewMessageText(''); // Clear input
-
-            // --- REMOVED client-side updateDoc for parent chat metadata ---
-            // --- Let Cloud Function handle updating lastMessage, lastActivity, ---
-            // --- and coachUnreadCount ---
 
         } catch (err) {
             console.error("UserChatScreen: Error sending message:", err);
-             if (err.code === 'permission-denied') {
-                 Alert.alert("Error", "You do not have permission to send messages in this chat.");
-            } else {
-                Alert.alert("Error", "Could not send message. Please try again.");
-            }
+            Alert.alert("Error", "Could not send message. Please try again.");
             setError("Failed to send message.");
         } finally {
             setIsSending(false);
         }
-    }, [newMessageText, userId, coachId, chatId]); // Dependencies
+    }, [newMessageText, userId, coachId, chatId, getIdToken]);
 
     // --- Render Function for Message Item ---
     const renderMessageItem = ({ item }) => {

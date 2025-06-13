@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useMemo, useCallback } from 
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig'; 
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { TokenManager } from '../utils/tokenManager';
 
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000'; 
@@ -241,6 +242,41 @@ export const AuthProvider = ({ children }) => {
          catch (error) { console.error("AuthCtx: SignOut Error:", error); setUser(null); setActiveCoachId(null); setIsCoachStatusLoading(false); } // Defensive clear
     }, []);
 
+
+    const registerForPushNotifications = async (user) => {
+        try {
+            console.log(`🔔 Registering push notifications for ${user.userType}: ${user.uid}`);
+            
+            // Generate unique token
+            const uniqueToken = await TokenManager.generateUniqueToken(user.uid, user.userType);
+            
+            if (uniqueToken) {
+                // Update in database
+                const collection = user.userType === 'coach' ? 'nutritionists' : 'users';
+                await updateDoc(doc(db, collection, user.uid), {
+                    expoPushToken: uniqueToken,
+                    tokenGeneratedAt: new Date(),
+                    deviceInfo: {
+                        userType: user.userType,
+                        registeredAt: new Date().toISOString()
+                    }
+                });
+                
+                console.log(`✅ Unique push token registered for ${user.userType} ${user.uid}`);
+                return uniqueToken;
+            }
+        } catch (error) {
+            console.error('❌ Failed to register push notifications:', error);
+        }
+    };
+
+    // Call this when user logs in
+    const handleLogin = async (userData) => {
+        // ... existing login logic ...
+        
+        // Register unique push token
+        await registerForPushNotifications(userData);
+    };
 
     const contextValue = useMemo(() => ({
         user,          

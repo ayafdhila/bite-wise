@@ -1,19 +1,15 @@
-// Core domain types for food recognition feature
 
-// Enhanced image quality assessment
 export interface ImageQuality {
-  clarity: number; // 0-1 scale
-  lighting: number; // 0-1 scale
-  obstructions: number; // 0-1 scale (0 = no obstructions)
-  overall: number; // 0-1 scale
+  clarity: number; 
+  lighting: number; 
+  obstructions: number;
+  overall: number; 
 }
-
-// Enhanced confidence metrics for different aspects
 export interface ConfidenceMetrics {
-  foodIdentification: number; // 0-1 scale
-  ingredientAccuracy: number; // 0-1 scale
-  portionEstimation: number; // 0-1 scale
-  nutritionCalculation: number; // 0-1 scale
+  foodIdentification: number; 
+  ingredientAccuracy: number;
+  portionEstimation: number;
+  nutritionCalculation: number; 
 }
 
 export interface FoodItem {
@@ -21,19 +17,19 @@ export interface FoodItem {
   ingredients: string[];
   estimatedPortion: string;
   confidence: number;
-  category?: string; // e.g., "vegetable", "protein", "grain"
-  preparationMethod?: string; // e.g., "grilled", "fried", "steamed"
-  nutrition?: NutritionData; // Nutrition data for this specific item
+  category?: string;
+  preparationMethod?: string; 
+  nutrition?: NutritionData; 
 }
 
 export interface NutritionData {
   calories: number;
-  fat: number; // grams
-  protein: number; // grams
-  carbs: number; // grams
-  fiber: number; // grams
-  sugar: number; // grams
-  sodium: number; // milligrams
+  fat: number; 
+  protein: number; 
+  carbs: number; 
+  fiber: number; 
+  sugar: number; 
+  sodium: number; 
 }
 
 export interface FoodAnalysisResult {
@@ -65,7 +61,6 @@ export interface AnalysisState {
   error: ApiError | null;
 }
 
-// Camera related types
 export interface CameraPermission {
   granted: boolean;
   canAskAgain: boolean;

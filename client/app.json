@@ -21,22 +21,31 @@
       "package": "com.ayafd.myapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"},
+        "backgroundColor": "#ffffff"
+      },
       "googleServicesFile": "./android/google-services.json"
-   },
-   
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font",
-      ["expo-build-properties", {
-        "ios": {
-          "useFrameworks": "static"
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
-      }],
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7ce8d715-f8b2-4e4d-84bb-222194b751e9"
+      }
+    },
+    "owner": "bitewise"
   }
 }

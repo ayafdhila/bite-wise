@@ -12,6 +12,8 @@ import CoachReminders from './CoachReminders'
 import DeleteCoachAccount from './DeleteCoachAccount';
 import EditCoachProfile from './EditCoachProfile';
 import CoachSettings from './CoachSettings';
+import NotificationsScreen from './NotificationsScreen';
+import CoachNotificationsScreen from './CoachNotificationsScreen';
 
 import { createStackNavigator } from '@react-navigation/stack';
 
@@ -31,11 +33,12 @@ export default function ProfessionalNavigator(){
                 <Stack.Screen name='ResetPassword' component={ResetPassword}/>
                 <Stack.Screen name='CoachContactUs' component={CoachContactUs}/>    
                 <Stack.Screen name='CoachLogOut' component={CoachLogOut}/>
-               
                 <Stack.Screen name='DeleteCoachAccount' component={DeleteCoachAccount}/>
                 <Stack.Screen name='EditCoachProfile' component={EditCoachProfile}/>
                 <Stack.Screen name='CoachSettings' component={CoachSettings}/>
                 <Stack.Screen name='CoachReminders' component={CoachReminders}/>
+                <Stack.Screen name='NotificationsScreen' component={NotificationsScreen}/>
+                <Stack.Screen name='CoachNotificationsScreen' component={CoachNotificationsScreen}/>
                
             </Stack.Navigator>
 

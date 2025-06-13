@@ -25,61 +25,26 @@ import {
 import Header from "../Header";
 import { AuthContext } from "../AuthContext";
 
-// Add API configuration
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const getCurrentDate = () => new Date().toISOString().split('T')[0];
-
-// Extended FoodItem type for editing state
-/**
- * @ignore
- */
 interface EditableFoodItem extends DomainFoodItem {
-  portionTemplate?: string; // e.g., "%%VALUE%% grams of"
-  gramValueStr?: string; // The numeric part of the portion, as a string
-  unit?: string; // The unit part, e.g., "grams", "cup"
-  isManuallyAdded?: boolean; // Flag for manually added items
+  portionTemplate?: string; 
+  gramValueStr?: string; 
+  unit?: string; 
+  isManuallyAdded?: boolean; 
 }
-
-// Extended FoodAnalysisResult for editing state
-/**
- * @ignore
- */
 interface EditableFoodAnalysisResult extends Omit<FoodAnalysisResult, "foods"> {
   foods: EditableFoodItem[];
 }
 
-/**
- * Props for the NutritionDisplay component.
- */
 interface NutritionDisplayProps {
-  /**
-   * The food analysis result to display.
-   */
   result: FoodAnalysisResult;
-  /**
-   * Optional URI of the captured image to display alongside the nutrition data.
-   */
   imageDataUri?: string;
-  /**
-   * Callback function invoked when the user edits the nutrition data.
-   * @param updatedResult - The modified food analysis result.
-   */
   onEdit: (updatedResult: FoodAnalysisResult) => void;
-  /**
-   * Callback function invoked when the user saves the (potentially edited) nutrition data.
-   */
   onSave: () => void;
-  /**
-   * Callback function invoked when the user chooses to retake the photo.
-   */
   onRetake: () => void;
 }
 
-/**
- * NutritionDisplay component presents the food analysis results, including detected food items,
- * their estimated portions, and detailed nutritional information. It allows users to review,
- * edit, and save the analysis.
- */
 export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
   ({
     result,
@@ -91,13 +56,11 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
     const { user } = useContext(AuthContext);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    // Use the extended type for editedResult
     const [editedResult, setEditedResult] =
       useState<EditableFoodAnalysisResult>(
         () => processResultForEditing(result) 
       );
 
-    // Helper to process FoodAnalysisResult for internal editing state
     function processResultForEditing(
       currentResult: FoodAnalysisResult
     ): EditableFoodAnalysisResult {
@@ -109,21 +72,21 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
           return {
             ...food,
             portionTemplate: descriptionTemplate,
-            gramValueStr: gramValue, // This will hold the numeric part
-            unit: unit, // Store the unit
-            isManuallyAdded: false, // Existing items are not manually added
+            gramValueStr: gramValue, 
+            unit: unit, 
+            isManuallyAdded: false, 
           };
         }),
       };
     }
 
     useEffect(() => {
-      // When the result prop changes, re-initialize the editedResult state
+
       setEditedResult(processResultForEditing(result));
     }, [result]);
 
     const handleStartEditing = () => {
-      setEditedResult(processResultForEditing(result)); // Ensure fresh split when starting edit
+      setEditedResult(processResultForEditing(result)); 
       setIsEditing(true);
     };
 
@@ -139,11 +102,10 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
     };
 
     const handleCancelEdits = () => {
-      setEditedResult(processResultForEditing(result)); // Reset to original processed result
+      setEditedResult(processResultForEditing(result)); 
       setIsEditing(false);
     };
 
-    // Handle the edit icon press
     const handleEditIconPress = () => {
       if (isEditing) {
         handleSaveEdits();
@@ -152,7 +114,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       }
     };
 
-    // Add the meal logging function
     const handleSaveMeal = async () => {
       if (!user?.uid) {
         Alert.alert("Error", "User not logged in.");
@@ -166,23 +127,21 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
         return;
       }
 
-      if (isSaving) return; // Prevent double-submission
+      if (isSaving) return; 
 
       setIsSaving(true);
 
       try {
         const date = getCurrentDate();
-        
-        // Create meal payload from the analyzed food data
+
         const mealPayload = {
           uid: user.uid,
-          mealType: "snack", // Changed from "Snacks" to "snack" (lowercase and singular)
+          mealType: "snack",
           date: date,
           title: currentResult.foods.length > 0 
             ? currentResult.foods.map(food => food.name).join(", ")
             : "AI Analyzed Food",
-          
-          // Use the total nutrition from the analysis
+
           calories: Math.round(currentResult.nutritionPerServing.calories),
           protein: Math.round(currentResult.nutritionPerServing.protein * 10) / 10,
           carbs: Math.round(currentResult.nutritionPerServing.carbs * 10) / 10,
@@ -195,8 +154,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
           recipeId: null,
           servingSize: 1,
           servingUnit: "serving",
-          
-          // Additional data for AI-analyzed foods
+
           analysisData: {
             foods: currentResult.foods.map(food => ({
               name: food.name,
@@ -234,8 +192,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
         }
 
         console.log("AI-analyzed meal logged successfully! Response:", responseBody);
-        
-        // Show success message
+
         Alert.alert(
           "Success", 
           `${mealPayload.title} has been added to your meal log!`,
@@ -243,7 +200,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
             {
               text: "OK",
               onPress: () => {
-                // Call the original onSave callback to handle navigation
                 onSave();
               }
             }
@@ -258,7 +214,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       }
     };
 
-    // This function is called when the gram input changes
     const handleGramValueChange = useCallback(
       (index: number, newValueStr: string) => {
         setEditedResult((prev) => {
@@ -271,8 +226,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
             foodItemToUpdate.unit === undefined
           )
             return prev;
-
-          // Reconstruct the full portion string using %%VALUE%% and the stored unit
           const reconstructedPortion = foodItemToUpdate.portionTemplate.replace(
             "%%VALUE%%",
             newValueStr
@@ -280,7 +233,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
 
           const updatedFoodItems = prev.foods.map((food, i) => {
             if (i === index) {
-              return { ...food, gramValueStr: newValueStr }; // gramValueStr now stores the numeric part of the value
+              return { ...food, gramValueStr: newValueStr };
             }
             return food;
           });
@@ -294,7 +247,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       [] 
     );
 
-    // handlePortionChange now takes the full new portion string
     const handlePortionChange = useCallback(
       (index: number, newFullPortionStr: string) => {
         setEditedResult((prev) => {
@@ -302,7 +254,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
 
           const newFoods = prev.foods.map((food, i) => {
             if (i === index) {
-              const originalAiFoodItem = result.foods[index]; // Base for scaling
+              const originalAiFoodItem = result.foods[index]; 
 
               let scaledNutritionToUpdate: NutritionData | undefined =
                 food.nutrition;
@@ -365,7 +317,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
         const newFoods = prev.foods.map((food, i) =>
           i === index ? { ...food, name: newName } : food
         );
-        // Note: Changing name does not affect total nutrition unless other logic is added.
+        
         return {
           ...prev,
           foods: newFoods,
@@ -405,21 +357,21 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
         };
 
         const initialPortion = "1 serving";
-        // Ensure splitPortionForEditing is imported and available in this scope
+
         const { descriptionTemplate, gramValue, unit } =
           splitPortionForEditing(initialPortion);
 
         const newFoodItem: EditableFoodItem = {
           name: "New Food Item",
-          ingredients: [], // Add empty ingredients array
+          ingredients: [], 
           estimatedPortion: initialPortion,
           nutrition: defaultNutrition,
-          confidence: 1.0, // Max confidence as it's manually added
-          // Editable fields
+          confidence: 1.0, 
+      
           portionTemplate: descriptionTemplate,
           gramValueStr: gramValue,
           unit: unit,
-          isManuallyAdded: true, // Mark as manually added
+          isManuallyAdded: true, 
         };
 
         const updatedFoods = [...prev.foods, newFoodItem];
@@ -433,14 +385,14 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       });
     }, []);
 
-    // Function to handle nutrition value changes for manually added items
+
     const handleNutritionValueChange = useCallback(
       (index: number, field: keyof NutritionData, value: string) => {
         setEditedResult((prev) => {
           if (!prev) return prev;
 
           const foodItem = prev.foods[index];
-          if (!foodItem?.isManuallyAdded) return prev; // Only allow editing for manually added items
+          if (!foodItem?.isManuallyAdded) return prev; 
 
           const numericValue = parseFloat(value) || 0;
 
@@ -451,7 +403,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                 [field]: numericValue,
               };
 
-              // Auto-calculate calories if macronutrients are changed
               if (field === "fat" || field === "protein" || field === "carbs") {
                 updatedNutrition.calories =
                   updatedNutrition.fat * 9 +
@@ -476,11 +427,10 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       []
     );
 
-    // Use a single displayResult that's computed based on current state
     const displayResult = isEditing ? editedResult : processResultForEditing(result);
 
     if (!displayResult) {
-      // Handle case where result might be null or undefined initially
+
       return (
         <View style={styles.container}>
           <Header 
@@ -495,14 +445,13 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       );
     }
 
-    // Helper function to get color based on confidence level
+
     const getConfidenceColor = (confidence: number): string => {
-      if (confidence >= 0.8) return "#4CAF50"; // Green for high confidence (80%+)
-      if (confidence >= 0.6) return "#FFC107"; // Amber for medium confidence (60-79%)
-      return "#F44336"; // Red for low confidence (<60%)
+      if (confidence >= 0.8) return "#4CAF50"; 
+      if (confidence >= 0.6) return "#FFC107"; 
+      return "#F44336"; 
     };
 
-    // Helper function to get an icon based on confidence level
     const getConfidenceIcon = (
       confidence: number
     ): keyof typeof Ionicons.glyphMap => {
@@ -511,10 +460,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
       return "close-circle";
     };
 
-    // Define MacroNutrientVisualizerProps and MacroNutrientVisualizer component here
-    /**
-     * @ignore
-     */
+
     interface MacroNutrientVisualizerProps {
       label: string;
       grams: number;
@@ -589,7 +535,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
           <View style={styles.confidenceSectionCard}>
             <Text style={styles.confidenceSectionTitle}>Analysis Quality</Text>
 
-            {/* Overall Recognition Confidence */}
+  
             <View style={styles.confidenceItemRow}>
               <Ionicons
                 name="ribbon-outline"
@@ -625,7 +571,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
               </Text>
             </View>
 
-            {/* Image Quality */}
             <View style={styles.confidenceItemRow}>
               <Ionicons
                 name="image-outline"
@@ -666,7 +611,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
               {Math.round(displayResult.imageQuality.lighting * 100)}%)
             </Text>
 
-            {/* Detailed Confidence Metrics */}
             <View style={styles.detailedMetricsContainer}>
               <View style={styles.metricPill}>
                 <Ionicons
@@ -743,7 +687,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
             </View>
           </View>
 
-          {/* --- Detected Foods Section --- */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Detected Foods</Text>
             {displayResult.foods.map((food, index) => {
@@ -758,9 +701,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                 currentFood.name &&
                 currentFood.estimatedPortion
               ) {
-                // Prepare a regex to remove the food name from the beginning of the portion string, case-insensitively.
-                // This handles cases where estimatedPortion might be like "Food Name, actual portion details..."
-                // It escapes special characters in currentFood.name to ensure it's treated as a literal string in the regex.
                 const escapedName = currentFood.name.replace(
                   /[.*+?^${}()|[\]\\\\]/g,
                   "\\\\$&"
@@ -820,7 +760,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                   </View>
                   {isEditing ? (
                     <>
-                      {/* Portion Editing UI */}
+  
                       <View style={styles.portionEditContainer}>
                         <Text style={styles.portionDescriptionText}>
                           {currentFood.portionTemplate?.split("%%VALUE%%")[0]}
@@ -856,7 +796,6 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                         </Text>
                       </View>
 
-                      {/* Manual Nutrition Editing for Manually Added Items */}
                       {currentFood.isManuallyAdded && (
                         <View style={styles.manualNutritionEditContainer}>
                           <Text style={styles.manualNutritionLabel}>
@@ -961,7 +900,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                           ) {
                             portionDisplayText =
                               currentFood.estimatedPortion.substring(
-                                currentFood.name.length + 1 // +1 for the space
+                                currentFood.name.length + 1
                               );
                           } else if (
                             currentFood.estimatedPortion &&
@@ -972,10 +911,9 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                             !currentFood.estimatedPortion
                               .substring(currentFood.name.length)
                               .trim()
-                              .startsWith("(") // Avoid stripping if it's like "Apple(slice)"
+                              .startsWith("(") 
                           ) {
-                            // Check if the character immediately after the name is not a letter,
-                            // to avoid cases like "Apple" and "Apple Pie" if "Apple" is the name.
+                         
                             const charAfterName =
                               currentFood.estimatedPortion.charAt(
                                 currentFood.name.length
@@ -989,7 +927,7 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                                 .trim();
                             }
                           }
-                          // Capitalize the first letter of the cleaned portion text
+                    
                           return (
                             portionDisplayText.charAt(0).toUpperCase() +
                             portionDisplayText.slice(1)
@@ -1025,11 +963,10 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
             )}
           </View>
 
-          {/* Nutrition Facts */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Total Nutrition per Serving</Text>
             <View style={styles.nutritionContainer}>
-              {/* Prominent Calories */}
+           
               <View style={styles.totalCaloriesSection}>
                 <Text style={styles.totalCaloriesLabel}>Calories</Text>
                 <Text style={styles.totalCaloriesValue}>
@@ -1037,13 +974,12 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                 </Text>
               </View>
 
-              {/* Macronutrient Visualizers */}
               <MacroNutrientVisualizer
                 label="Fat"
                 grams={displayResult.nutritionPerServing.fat}
                 caloriesFromMacro={displayResult.nutritionPerServing.fat * 9}
                 totalCalories={displayResult.nutritionPerServing.calories}
-                color="#D48A73" // Fat color
+                color="#D48A73" 
               />
               <MacroNutrientVisualizer
                 label="Protein"
@@ -1052,17 +988,16 @@ export const NutritionDisplay: React.FC<NutritionDisplayProps> = React.memo(
                   displayResult.nutritionPerServing.protein * 4
                 }
                 totalCalories={displayResult.nutritionPerServing.calories}
-                color="#D48A73" // Protein color
+                color="#D48A73" 
               />
               <MacroNutrientVisualizer
                 label="Carbs"
                 grams={displayResult.nutritionPerServing.carbs}
                 caloriesFromMacro={displayResult.nutritionPerServing.carbs * 4}
                 totalCalories={displayResult.nutritionPerServing.calories}
-                color="#D48A73" // Carbs color
+                color="#D48A73" 
               />
 
-              {/* Other Nutrients (unchanged rendering) */}
               <View style={styles.otherNutrientsDivider} />
               {renderNutritionRow(
                 "Fiber",
