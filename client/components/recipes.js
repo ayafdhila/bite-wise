@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useContext, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, TextInput, RefreshControl } from 'react-native'; // Added RefreshControl
+import { 
+    View, 
+    Text, 
+    FlatList, 
+    ActivityIndicator, 
+    TouchableOpacity, 
+    TextInput, 
+    RefreshControl 
+} from 'react-native';
 import { AuthContext } from './AuthContext';
 import Card from './Card'; 
 import axios from 'axios';
@@ -16,10 +24,9 @@ export default function Recipes({ navigation }) {
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [isRefreshing, setIsRefreshing] = useState(false); 
-  
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    
+    // ✅ Simplified user data extraction
     const { uid, dietaryPreferences, nutritionPlan, otherDietaryText } = useMemo(() => ({
         uid: user?.uid,
         dietaryPreferences: user?.dietaryPreferences || [],
@@ -27,27 +34,29 @@ export default function Recipes({ navigation }) {
         otherDietaryText: user?.otherDietaryText || '', 
     }), [user]);
 
-    
+    // ✅ Simple dietary preferences processing
     const processedDietaryPreferences = useMemo(() => {
         let prefs = Array.isArray(dietaryPreferences) ? [...dietaryPreferences] : [];
        
+        // Remove "No Restrictions" if other preferences exist
         const noRestrictionsIndex = prefs.findIndex(p => p.includes("No Restrictions"));
         if (noRestrictionsIndex > -1) {
             if (prefs.length > 1) {
                 prefs.splice(noRestrictionsIndex, 1); 
             } else {
-                 prefs = []; 
+                prefs = []; 
             }
         }
        
-         if (otherDietaryText && !prefs.some(p => p.toLowerCase().includes('other'))) {
-             prefs.push('Other'); 
-         }
+        // Add "Other" if otherDietaryText exists
+        if (otherDietaryText && !prefs.some(p => p.toLowerCase().includes('other'))) {
+            prefs.push('Other'); 
+        }
+        
         return prefs;
     }, [dietaryPreferences, otherDietaryText]);
 
-
-   
+    // ✅ Simplified fetch function - just call API and get results
     const fetchRecipes = useCallback(async (query = "", refreshing = false) => {
         if (!uid) {
             console.log("No UID, cannot fetch recipes.");
@@ -55,25 +64,34 @@ export default function Recipes({ navigation }) {
             setIsRefreshing(false);
             return;
         }
-        if (!refreshing) setLoading(true); 
+
+        if (!refreshing) setLoading(true);
 
         try {
-            // Extract goals, providing defaults
+            // Extract nutrition goals with defaults
             const dailyCalories = nutritionPlan?.calories || 0;
             const proteinGoal = nutritionPlan?.protein || 0;
             const carbsGoal = nutritionPlan?.carbs || 0;
             const fatGoal = nutritionPlan?.fat || 0;
-            const fiberGoal = nutritionPlan?.fiber?.max || 0; // Use max fiber
+            const fiberGoal = nutritionPlan?.fiber?.max || 0;
 
-            console.log("Fetching recipes with criteria:", {
-                 uid, dailyCalories, proteinGoal, carbsGoal, fatGoal, fiberGoal, processedDietaryPreferences, otherDietaryText, query
+            console.log("🍽️ Fetching recipes with criteria:", {
+                uid, 
+                dailyCalories, 
+                proteinGoal, 
+                carbsGoal, 
+                fatGoal, 
+                fiberGoal, 
+                processedDietaryPreferences, 
+                otherDietaryText, 
+                query
             });
 
-
+            // ✅ Simple API call
             const response = await axios.post(`${API_BASE_URL}/recipes/fetch-recipes`, {
                 uid,
-                dietaryPreferences: processedDietaryPreferences, // Send processed list
-                otherDietaryText: processedDietaryPreferences.includes('Other') ? otherDietaryText : '', // Send text only if 'Other' is selected
+                dietaryPreferences: processedDietaryPreferences,
+                otherDietaryText: processedDietaryPreferences.includes('Other') ? otherDietaryText : '',
                 dailyCalories,
                 proteinGoal,
                 carbsGoal,
@@ -82,46 +100,48 @@ export default function Recipes({ navigation }) {
                 searchQuery: query,
             });
 
-            console.log(`Fetched ${response.data?.length || 0} recipes.`);
-            setRecipes(response.data || []); // Handle empty response
+            console.log(`✅ Fetched ${response.data?.length || 0} recipes.`);
+            setRecipes(response.data || []);
 
         } catch (error) {
-            console.error("Error fetching recipes:", error.response ? JSON.stringify(error.response.data) : error.message);
-            alert("Error fetching recipes: " + (error.response?.data?.message || error.message));
-            setRecipes([]); // Clear recipes on error
+            console.error("❌ Error fetching recipes:", error.response ? JSON.stringify(error.response.data) : error.message);
+            
+            const errorMessage = error.response?.data?.message || error.message || "Unknown error occurred";
+            alert("Error fetching recipes: " + errorMessage);
+            setRecipes([]);
         } finally {
             setLoading(false);
             setIsRefreshing(false);
         }
-    }, [uid, nutritionPlan, processedDietaryPreferences, otherDietaryText]); // Dependencies for useCallback
+    }, [uid, nutritionPlan, processedDietaryPreferences, otherDietaryText]);
 
-    // Initial fetch on component mount or when UID changes
+    // Initial fetch on component mount
     useEffect(() => {
         fetchRecipes();
-    }, [fetchRecipes]); // Depend on the memoized fetchRecipes function
+    }, [fetchRecipes]);
 
-    // Handler for search button press
+    // Search handler
     const handleSearch = () => {
-        fetchRecipes(search); // Pass the current search term
+        fetchRecipes(search);
     };
 
-    // Handler for pull-to-refresh
+    // Pull-to-refresh handler
     const onRefresh = () => {
         setIsRefreshing(true);
-        fetchRecipes(search, true); // Fetch with current search, indicate refreshing
+        fetchRecipes(search, true);
     };
 
-    // --- Render Logic ---
-    if (loading && !isRefreshing) { // Show Lottie only on initial load
+    // ✅ Loading state with animation
+    if (loading && !isRefreshing) {
         return (
             <View style={styles.loadingContainer}>
                 <LottieView
-                    source={require('../assets/Animations/recipes.json')} // Adjust path if needed
+                    source={require('../assets/Animations/recipes.json')}
                     autoPlay
                     loop
                     style={{ width: 300, height: 300 }}
                 />
-                <Text>Loading recipes...</Text>
+                <Text style={styles.loadingText}>Loading delicious recipes...</Text>
             </View>
         );
     }
@@ -131,6 +151,7 @@ export default function Recipes({ navigation }) {
             <Header subtitle={"Dive Into Yummy Recipes"} />
             <TabNavigation />
 
+            {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <TextInput
                     value={search}
@@ -138,56 +159,69 @@ export default function Recipes({ navigation }) {
                     placeholder="Search recipes (e.g., chicken pasta)"
                     style={styles.searchInput}
                     returnKeyType="search"
-                    onSubmitEditing={handleSearch} // Allow searching via keyboard
+                    onSubmitEditing={handleSearch}
                 />
                 <TouchableOpacity onPress={handleSearch} disabled={loading}>
-                    <Ionicons name="search" size={24} color={loading ? '#ccc' : '#2E4A32'} />
+                    <Ionicons 
+                        name="search" 
+                        size={24} 
+                        color={loading ? '#ccc' : '#2E4A32'} 
+                    />
                 </TouchableOpacity>
             </View>
 
+            {/* Results */}
             {recipes.length === 0 && !loading ? (
                 <View style={styles.centeredMessageContainer}>
-                    <Text style={styles.centeredMessageText}>No recipes found matching your criteria.</Text>
-                    <Text style={styles.centeredMessageSubText}>Try adjusting your search or preferences.</Text>
-                     <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
+                    <Ionicons name="restaurant-outline" size={64} color="#ccc" />
+                    <Text style={styles.centeredMessageText}>
+                        No recipes found matching your criteria.
+                    </Text>
+                    <Text style={styles.centeredMessageSubText}>
+                        Try adjusting your search or preferences.
+                    </Text>
+                    <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
                         <Text style={styles.retryButtonText}>Try Again</Text>
-                     </TouchableOpacity>
+                    </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
-                    style={{ marginBottom: 10 }} // Adjust as needed for TabNavigation overlap
+                    style={{ marginBottom: 10 }}
                     data={recipes}
                     renderItem={({ item }) => {
-                         // Extract simple nutrition for the card display if available
-                         const calories = item.nutrition?.nutrients?.find(n => n.name === 'Calories')?.amount;
-                         return (
+                        // Extract nutrition for card display
+                        const calories = item.nutrition?.nutrients?.find(n => n.name === 'Calories')?.amount;
+                        
+                        return (
                             <Card
                                 title={item.title}
                                 description={`Ready in: ${item.readyInMinutes || 'N/A'} min`}
                                 calories={calories ? `${Math.round(calories)} kcal` : 'N/A'}
-                                imageUrl={item.image || 'https://via.placeholder.com/150?text=No+Image'} // Placeholder
+                                imageUrl={item.image || 'https://via.placeholder.com/150?text=No+Image'}
                                 onPress={() => navigation.navigate('RecipeDetail', {
                                     recipeId: item.id,
-                                    // Pass basic info needed by detail screen initially
                                     imageUrl: item.image,
                                     title: item.title,
                                 })}
                             />
-                         );
+                        );
                     }}
                     keyExtractor={(item) => item.id.toString()}
-                    refreshControl={ // Add pull-to-refresh
+                    refreshControl={
                         <RefreshControl
                             refreshing={isRefreshing}
                             onRefresh={onRefresh}
-                            colors={["#2E4A32"]} // Spinner color
+                            colors={["#2E4A32"]}
+                            tintColor="#2E4A32"
                         />
                     }
-                    ListEmptyComponent={!loading ? ( // Show only if not loading and list is empty after fetch
+                    ListEmptyComponent={!loading ? (
                         <View style={styles.centeredMessageContainer}>
-                           <Text style={styles.centeredMessageText}>Pull down to refresh or try a different search.</Text>
+                            <Text style={styles.centeredMessageText}>
+                                Pull down to refresh or try a different search.
+                            </Text>
                         </View>
-                     ) : null}
+                    ) : null}
                 />
             )}
         </View>
