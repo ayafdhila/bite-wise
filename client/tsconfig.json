@@ -5,6 +5,7 @@
     "esModuleInterop": true,
     "jsx": "react-jsx",
     "lib": ["esnext"],
+    "module": "Node16",
     "moduleResolution": "node16",
     "noEmit": true,
     "skipLibCheck": true,
